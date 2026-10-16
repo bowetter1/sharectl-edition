@@ -1,23 +1,49 @@
 # sharectl-edition
 
-**Your own bot edits your personal morning paper.**
+**Talk to your AI. It asks what you want to read, creates your personal newspaper, and changes it as your interests change.**
 
-Part of [sharectl.com](https://sharectl.com) — a people-first personal edition edited by your own AI bot. This is the on-ramp: a zero-dependency Python project that fetches, selects, and publishes your daily newspaper from the sources you choose. No app, no account, no central server.
+sharectl-edition is a skill for your own AI bot. Start with a conversation: your bot asks about your interests, preferred sources, and what you would rather skip. It saves your answers, builds your first edition, and helps you choose where to publish it. Come back to the same bot whenever you want to change your paper.
 
-Tell your bot what you read, and every morning it builds a newspaper just for you: the sources you trust, the YouTube channels you watch, and optionally the people you follow on X. Change the whole paper with one sentence in chat: *"more AI, less politics, max two stories from The Verge."*
+Part of [sharectl.com](https://sharectl.com). Your paper is a static web page with headlines, short summaries, images, and links to the original publishers. Writers come before outlets. The Python builder uses only the standard library and runs in your bot's environment.
 
-![Example edition](examples/screenshot.jpg)
+## Start with a conversation
 
-👉 **[Live demo: utgava.sharectl.com](https://utgava.sharectl.com/)**
-
-Install: `git clone https://github.com/bowetter1/sharectl-edition.git && cd sharectl-edition && python3 -m sharectl_edition build --config config.example.json --out site/`
-
-## Quickstart: tell your bot
+Give an AI agent that can run Python and edit files this request:
 
 > Install the sharectl edition skill from https://github.com/bowetter1/sharectl-edition and set up my morning paper.
 
-Your bot reads [`SKILL.md`](SKILL.md), asks you for your sources, rules, name and time zone, builds the first edition
-and sets up a daily routine.
+Your bot follows [`SKILL.md`](SKILL.md) to:
+
+1. **Ask what you want.** Your name, topics and news sources, optional YouTube channels, what to include or avoid, time zone, and optional weather location. If you want a daily edition, it also asks when it should be ready.
+2. **Create your first paper.** It turns your answers into saved preferences, fetches your sources, and builds an edition for you to read.
+3. **Help you publish and schedule it.** You choose where it lives. Public publishing needs your approval and hosting access; daily delivery depends on your agent's scheduling support.
+4. **Keep editing through conversation.** Tell the bot what to change. It updates the saved rules for future builds and can rebuild today's edition when you ask.
+
+### What that conversation can look like
+
+*Illustrative example:*
+
+> **You:** Make me a morning paper.
+>
+> **Your AI:** What should I call you? What topics and sources do you enjoy, and what should I leave out? Would you like weather or YouTube videos?
+>
+> **You:** Call me Alex. Mostly AI and technology, especially Simon Willison and Ars Technica. Very little politics.
+>
+> **Your AI:** I'll save those preferences and build your first edition.
+
+Then, after reading:
+
+> **You:** More AI, less crypto, and no more than two stories from The Verge. Rebuild today's paper.
+>
+> **Your AI:** I'll update your preferences and rebuild it with those rules.
+
+You can also say "add this YouTube channel", "remove the weather", or "show my preferences". Your bot handles the configuration files; you describe the newspaper you want. Changes are stored locally and used in future builds.
+
+## See an example
+
+👉 **[Live demo: utgava.sharectl.com](https://utgava.sharectl.com/)**
+
+![Example edition](examples/screenshot.jpg)
 
 ## Quickstart: by hand
 
@@ -72,9 +98,9 @@ config.example.json       US defaults: AP, The Verge, TechCrunch, Ars Technica, 
 sharectl_edition/
   fetch/                  news.py (RSS/Atom + Open Graph + bylines), youtube.py, x.py, weather.py, markets.py
   select.py               the editorial rules
-  feedback.py             thumbs up/down -> weights (local JSON)
+  feedback.py             saved source, author and keyword preferences (local JSON)
   render/                 template.py, edition.css, labels.py (all UI strings)
-  publish/                static.py, cloudflare.py, sharectl.py
+  publish/                static.py, github.py, cloudflare.py, sharectl.py
 tests/                    python3 -m unittest discover -s tests
 examples/                 a sample edition built from made-up data (examples/items.json)
 ```
