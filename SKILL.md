@@ -80,6 +80,11 @@ python3 -m sharectl_edition build --config config.json --items candidates.json -
 
 This writes `site/index.html`, a dated archive, and `site/report.json`. The builder validates empty selections, invented or duplicate IDs, unknown sections and mismatched batches before writing. It does not judge the normal AI selection's editorial compliance; that is your responsibility.
 
+**Note for weather and markets:**
+
+- Weather requires `lat` and `lon` in the config's `modules.weather` object. Find coordinates via search (e.g., "Austin TX coordinates"). Most weather services require exact decimal coordinates.
+- Markets requires `symbols` array with each entry having `symbol` (ticker), `label` (short name), and `name` (full name). Common US symbols: `^GSPC` (S&P 500), `^IXIC` (Nasdaq), `^DJI` (Dow Jones).
+
 Handle the command's result explicitly:
 
 - **Exit 2:** read the validation error, correct `selection.json` once and rerun the exact same command with the same candidates and output path. Do not fetch again to reset the retry. Python stores the attempt in private `.edition-state/` beside the config, so a separate command process can continue it.

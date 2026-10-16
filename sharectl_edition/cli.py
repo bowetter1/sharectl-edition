@@ -25,8 +25,8 @@ def main(argv=None):
         p = sub.add_parser(name)
         p.add_argument("--config", default="config.json")
         p.add_argument("--out", default=None)
-        p.add_argument("--items", required=True, help="candidate JSON from fetch")
-        p.add_argument("--selection", required=True, help="AI selection JSON")
+        p.add_argument("--items", default=None, help="candidate JSON from fetch")
+        p.add_argument("--selection", default=None, help="AI selection JSON")
     f = sub.add_parser("feedback")
     f.add_argument("action", choices=["show", "boost", "mute", "hide"])
     f.add_argument("arg", nargs="*", help="boost/mute: IDENTIFIER AMOUNT | hide: IDENTIFIER")
@@ -68,6 +68,20 @@ def main(argv=None):
             feedback.save(fb_path, w)
         print(json.dumps(w, indent=1, ensure_ascii=False))
         return
+
+    # build and publish require both --items and --selection
+    if a.cmd in ("build", "publish"):
+        if not a.items or not a.selection:
+            print()
+            print("Error: Both --items and --selection are required.")
+            print()
+            print("The three-step AI selection flow:")
+            print("  1. python -m sharectl_edition fetch --config config.json --out candidates.json")
+            print("  2. AI reads candidates.json and creates selection.json")
+            print("  3. python -m sharectl_edition build --config config.json --items candidates.json --selection selection.json --out site/")
+            print()
+            print("See SKILL.md for the complete workflow and selection.json schema.")
+            return 1
 
     from .build import CandidateError, collect
     if a.cmd == "fetch":
