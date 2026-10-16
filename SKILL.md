@@ -115,7 +115,7 @@ The job must use the same absolute config path and preference file as the conver
 
 ## 6. Save changes requested in conversation
 
-The page has no voting buttons. Requests such as "more AI", "less crypto", "hide Tesla", or "add this YouTube channel" are editing instructions. Apply them to the reader's saved settings, rather than merely acknowledging them or relying on chat memory.
+The page has no voting buttons. Requests to change topic coverage, exclude a subject, or add a source are editing instructions. Apply them to the reader's saved settings, rather than merely acknowledging them or relying on chat memory.
 
 1. Read the current config and its resolved `feedback_file` from disk. If an existing file is malformed, preserve it and resolve the error; do not silently replace it with defaults.
 2. Translate the request using the table below. Preserve unrelated settings. Resolve a named source to its configured ID. Ask only when ambiguity would materially change the result.
@@ -127,10 +127,10 @@ The page has no voting buttons. Requests such as "more AI", "less crypto", "hide
 
 | Reader request | Save this change |
 | --- | --- |
-| "More AI" | Add relevant terms to `rules.boost_keywords`; move the AI section earlier if appropriate. Do not use a negative keyword weight: that demotes the topic. |
+| Increase coverage of a reader-chosen topic | Add relevant terms to `rules.boost_keywords`; move the corresponding section earlier if appropriate. Do not use a negative keyword weight: that demotes the topic. |
 | "Less crypto" | Apply a modest negative keyword weight, e.g. `feedback mute crypto -0.5`. This reduces ranking, not a guarantee of fewer stories. |
 | "Never show Tesla" | Add `tesla` to `rules.mute_keywords`. A negative weight alone does not exclude stories. |
-| "Less politics" / "No politics" | Lower `rules.max_political` / set it to `0`. Match the keyword list to the reader's language and topics; keyword filtering is not perfect classification. |
+| Adjust the reader’s requested political coverage | Change `rules.max_political` only to match the reader’s explicit preference. Match the keyword list to the reader’s language and topics; keyword filtering is not perfect classification. |
 | "More from Simon Willison" | To allow more stories, increase that RSS source's `cap` within the overall news limit. Source weights affect scoring but do not by themselves increase its RSS quota. |
 | "Max two from The Verge" | Set `cap: 2` on the existing `verge` RSS source. |
 | "Hide The Verge" | Run `feedback hide verge` with the active config; use the actual configured source ID. |
