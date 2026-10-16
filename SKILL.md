@@ -1,12 +1,18 @@
 ---
 name: sharectl-edition
-description: Build and publish the user's personal morning newspaper from the sources they choose (RSS news, YouTube channels, optionally their X timeline), edited by their rules, every morning. Use when the user wants a daily news digest or "my own morning paper", wants to add or remove sources, change what gets more or less space ("more AI, less politics"), or react to items with thumbs up/down.
+description: Create a personal morning newspaper through conversation. Ask about the reader's interests and sources, build their edition, and save later requests to add sources or change coverage. Use for personal newspaper setup, builds, publishing, and conversational preference changes.
 ---
 
 # sharectl-edition
 
 You are the editor of one person's morning paper. Everything runs in your own sandbox. There is no central server.
 The page links out to every article; never copy full article text into it.
+
+## Choose the workflow
+
+- **New reader:** follow the interview in step 2 before creating a personalized config or first edition. Installation and read-only checks may happen while waiting.
+- **Returning reader:** find and read their existing config and preference file before changing or building anything. Reuse the paths established in the conversation; if several papers exist and the intended one is unclear, ask which one. Do not restart the interview or overwrite their settings with the example config.
+- **Preference request:** follow step 6, even if the user does not ask for a new edition.
 
 ## 1. Install
 
@@ -21,20 +27,23 @@ Requires Python 3.10+. Optional: Node 18+ (`npx wrangler`) for Cloudflare Pages,
 
 ## 2. Ask the user, then write `config.json`
 
-Copy `config.example.json` to `config.json` (keep it next to the repo or in your own data folder). Ask, in one short message:
+Ask about the reader's wishes in their language **before building their first personalized edition**. Use answers already given in the conversation; ask only for missing preferences. Start with one short, friendly message covering:
 
-1. **Name and greeting**: what to call them ("Good morning, {name}.").
-2. **Time zone and when** the paper should be ready (e.g. 7:00 AM). Also the city for weather, or skip weather.
-3. **News sources**: suggest the defaults in the example and ask what to add or drop. Any RSS/Atom feed works.
-   If they name a site without a feed URL, find its RSS feed yourself and confirm it parses.
-4. **YouTube channels** (handles like `Fireship`). Optional.
-5. **X**: only if you have X tools for this user. Optional.
-6. **Rules** in their own words, then translate them into config:
-   - "more AI" -> add keywords to `rules.boost_keywords` and put the `ai` section first in `sections`
-   - "less politics" -> lower `rules.max_political` (0 = none); extend `rules.political_keywords` if needed
-   - "never show X" -> `rules.mute_keywords`, or `feedback hide SOURCE`
-   - "max 2 from The Verge" -> `"cap": 2` on that source; `"priority": 2` gives a source extra slots
-   - markets box: keep or remove `modules.markets`
+- What name/greeting they want, which topics and sources they enjoy, and what they want less of or excluded.
+- Whether to include weather (and which city), YouTube channels, or markets. Offer X only when you have the needed access.
+- Whether this is a one-off paper or a daily routine. Ask for time zone and ready time if they want a schedule.
+
+For example: "What should I call you, and what would you like in your paper? Tell me topics or favorite sources, anything to leave out, and whether you want weather or videos. Is this a one-off edition or something you want every morning?"
+
+Suggest a small set of sources when helpful. Find RSS/Atom URLs yourself for named sites and verify that they parse. Do not make the reader edit JSON or supply technical feed identifiers when you can resolve them.
+
+**Wait for the answer.** Silence or elapsed time is not permission to choose their interests, name, sources, location, or schedule. If they explicitly say "use the defaults" or delegate the choices, proceed with stated assumptions. If their answers already give enough direction, build without an extra confirmation round; ask a focused follow-up only when an unresolved choice matters.
+
+After the answers:
+
+1. Create a private working config from `config.example.json`, applying the reader's choices. Treat example names, locations, sources and modules as examples, not selected preferences. Omit unrequested optional modules. Use `publish.target: "static"` for the first local preview unless a destination is already agreed.
+2. Save it at a stable path outside the published output folder. Resolve `feedback_file` relative to that config's directory, as the CLI does. Keep using this config for future builds and preference updates.
+3. Parse the saved JSON and check the relevant values. Briefly summarize the chosen sources and rules, then build the first edition. Do not say the preferences are saved until the write and read-back succeed.
 
 Never put tokens or passwords in `config.json`. Credentials live in environment variables only.
 
@@ -79,46 +88,45 @@ Ask before publishing anywhere public the first time. Send the user the link aft
 
 ## 5. Daily routine
 
-Schedule a daily job (your platform's scheduler or cron) that starts about 30 minutes before the ready time:
-refresh the X timeline if enabled, import new feedback (step 6), run `publish`, check `report.json`, send the link.
+Only set up a daily routine when the user requests one. Use the platform's supported scheduler and the agreed time zone and ready time; start about 30 minutes earlier where appropriate. If scheduling is unavailable, say so rather than promise automatic editions.
 
-## 6. Plain-language preferences (no voting UI)
+The job must use the same absolute config path and preference file as the conversation. Each run reads the latest saved settings, refreshes X only if enabled, builds/publishes to the agreed destination, checks `report.json`, and delivers the result through the agreed channel. Do not embed an old copy of the preferences in the job prompt. Report scheduling as complete only after the scheduler confirms it.
 
-The page has no voting buttons. When the reader tells you what they want ("more AI", "less crypto", "hide Tesla", "more from Simon Willison"), you translate that into `feedback.json` weights or `config.json` rules:
+## 6. Save changes requested in conversation
 
-**Translate reader requests into commands:**
+The page has no voting buttons. Requests such as "more AI", "less crypto", "hide Tesla", or "add this YouTube channel" are editing instructions. Apply them to the reader's saved settings, rather than merely acknowledging them or relying on chat memory.
 
-- **"more AI"** or **"boost AI topics"**: Add "ai" to `rules.boost_keywords` in config.json, or run:
-  ```bash
-  python3 -m sharectl_edition feedback mute ai -1.0 --config config.json
-  ```
+1. Read the current config and its resolved `feedback_file` from disk. If an existing file is malformed, preserve it and resolve the error; do not silently replace it with defaults.
+2. Translate the request using the table below. Preserve unrelated settings. Resolve a named source to its configured ID. Ask only when ambiguity would materially change the result.
+3. Write the changed JSON, then read it back and verify the intended values. CLI weight commands are additive: do not replay them on retries or later turns just because the instruction remains in chat history. Check whether the requested change was already applied.
+4. Confirm briefly what was saved and that it applies to future builds. If saving fails, report that failure instead of claiming success.
+5. Rebuild today's edition when requested ("change today's paper" counts). Otherwise saving the preference is enough. Distinguish "preferences saved", "edition rebuilt", and "published"; publishing uses the existing authorization and destination.
 
-- **"less crypto"** or **"mute crypto"**: Add "crypto" to `rules.mute_keywords`, or:
-  ```bash
-  python3 -m sharectl_edition feedback mute crypto -0.5 --config config.json
-  ```
+### Translate requests into persistent settings
 
-- **"more from Simon Willison"** or **"boost simonw"**:
-  ```bash
-  python3 -m sharectl_edition feedback boost simonw 1.0 --config config.json
-  ```
+| Reader request | Save this change |
+| --- | --- |
+| "More AI" | Add relevant terms to `rules.boost_keywords`; move the AI section earlier if appropriate. Do not use a negative keyword weight: that demotes the topic. |
+| "Less crypto" | Apply a modest negative keyword weight, e.g. `feedback mute crypto -0.5`. This reduces ranking, not a guarantee of fewer stories. |
+| "Never show Tesla" | Add `tesla` to `rules.mute_keywords`. A negative weight alone does not exclude stories. |
+| "Less politics" / "No politics" | Lower `rules.max_political` / set it to `0`. Match the keyword list to the reader's language and topics; keyword filtering is not perfect classification. |
+| "More from Simon Willison" | To allow more stories, increase that RSS source's `cap` within the overall news limit. Source weights affect scoring but do not by themselves increase its RSS quota. |
+| "Max two from The Verge" | Set `cap: 2` on the existing `verge` RSS source. |
+| "Hide The Verge" | Run `feedback hide verge` with the active config; use the actual configured source ID. |
+| "Add/remove a source or YouTube channel" | Edit the appropriate `sources` list, resolve feed/channel identifiers and check new feeds. Preserve the other subscriptions. |
+| "Remove weather" | Set `modules.weather` to `null`. |
+| "Bring Tesla back" | Remove the matching exclusion and any conflicting saved keyword penalty; preserve unrelated preferences. |
+| "Show my preferences" | Read and summarize both the config and preference file, including exclusions and caps. This is read-only. |
 
-- **"hide Tesla"** or **"never show Tesla stories"**: Add "tesla" to `rules.mute_keywords`, or:
-  ```bash
-  python3 -m sharectl_edition feedback mute tesla -2.0 --config config.json
-  ```
+CLI examples (replace `config.json` with the active config path):
 
-- **"hide The Verge"** or **"unfollow verge"**:
-  ```bash
-  python3 -m sharectl_edition feedback hide verge --config config.json
-  ```
+```bash
+python3 -m sharectl_edition feedback mute crypto -0.5 --config config.json
+python3 -m sharectl_edition feedback hide verge --config config.json
+python3 -m sharectl_edition feedback show --config config.json
+```
 
-- **"show my preferences"**:
-  ```bash
-  python3 -m sharectl_edition feedback show --config config.json
-  ```
-
-Weights adjust source, author, and keyword scores. Hidden sources/authors never appear. Confirm each change in one sentence, then rebuild today's edition if the user asks.
+For "only today", use a temporary config and separate preference file for that build; do not change the persistent settings or schedule. For a reversal or reset, change only the named preferences unless the user explicitly requests a full reset.
 
 ## House rules
 - Link out to the publisher. Headline, short summary, lead image and byline only.
