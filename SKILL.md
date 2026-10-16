@@ -1,157 +1,81 @@
 ---
 name: sharectl-edition
-description: Create a personal morning newspaper through conversation, in the reader's own language. Ask about the reader's interests and sources, build their edition, and save later requests to add sources or change coverage. Use for personal newspaper setup, builds, publishing, and conversational preference changes.
+description: Build a reader's first personal newspaper as local HTML from their chosen topics and sources, then save conversational changes to their preferences. Use for newspaper setup, edition builds, and preference updates.
 ---
 
 # sharectl-edition
 
-You are the editor of one person's morning paper. Everything runs in your own sandbox. There is no central server.
-The page links out to every article; never copy full article text into it.
+Get the reader to a newspaper they can open and react to. Handle the files and commands yourself. Hosting and scheduling are later steps, only when requested; do not include them in the first-edition interview.
 
-## Choose the workflow
+## 1. Find out what they want to read
 
-- **New reader:** follow the interview in step 2 before creating a personalized config or first edition. Installation and read-only checks may happen while waiting.
-- **Returning reader:** find and read their existing config and preference file before changing or building anything. Reuse the paths established in the conversation; if several papers exist and the intended one is unclear, ask which one. Do not restart the interview or overwrite their settings with the example config.
-- **Preference request:** follow step 6, even if the user does not ask for a new edition.
+Use interests and source choices already given. Otherwise ask one short question in the reader's language:
 
-## 1. Install
+> What topics or sources would you like to read? Is there anything you want to leave out?
+
+Wait for that answer before choosing content. If they name topics without sources, choose a small set of relevant feeds and briefly state the choices. If they explicitly delegate all choices, make a provisional selection and say so. There are no default interests or subscriptions.
+
+Use the conversation's language for the interface. Use a known reader time zone, otherwise UTC for this first preview and mention it briefly. A name is optional: use a neutral greeting in their language if none is given. Do not turn these details into a questionnaire. Weather, markets, YouTube and X are optional; add them only when requested and the necessary information/access is available.
+
+For a returning reader, read their existing config and resolved feedback file and reuse their saved choices. Do not repeat the interview or replace their settings with the starter. If several papers exist and the intended one is unclear, ask which one.
+
+## 2. Prepare and save
+
+Reuse an existing checkout of this repository if available. Otherwise clone or download it to a writable working directory:
 
 ```bash
-git clone https://github.com/bowetter1/sharectl-edition.git ~/sharectl-edition   # or download the zip
-cd ~/sharectl-edition
-python3 -m pip install -r requirements.txt   # stdlib only today; the file is kept for future deps
-python3 -m unittest discover -s tests        # should print OK
+git clone https://github.com/bowetter1/sharectl-edition.git
+cd sharectl-edition
 ```
 
-Requires Python 3.10+. Optional: Node 18+ (`npx wrangler`) for Cloudflare Pages, and a headless Chrome to screenshot the result.
+Run commands from the repository directory. The builder needs Python 3.10+ and only the standard library; no pip install, hosting account, or credentials are needed for a local RSS edition. Check the available runtime. If the environment cannot execute Python or deliver an HTML file, explain the limitation without claiming an edition is ready.
 
-## 2. Ask the user, then write `config.json`
+Create a private `config.json` from `config.example.json`, outside the output folder:
 
-Ask about the reader's wishes in their language **before building their first personalized edition**. Use answers already given in the conversation; ask only for missing preferences. Start with one short, friendly message covering:
+- Add the chosen RSS/Atom sources to `sources.rss`. Each needs `id`, `name`, `url` and, optionally, `section`. Find feed URLs yourself and verify they parse; do not ask the reader for technical identifiers.
+- Create `sections` for the reader's topics, with matching `key`, `title` and optional `keywords`. A single general news section is enough. Never copy the demo's sources or topic choices.
+- Set `language`, `greeting`, and `timezone` as above. A greeting without `{name}` works. Save only requested boosts, exclusions and source limits. `max_political: null` means no political cap.
+- Keep `publish.target: "static"`. Leave unrequested modules off and X disabled.
+- Keep stable absolute paths for the config and output. `feedback_file` resolves relative to the config's directory. Read back the saved JSON before saying preferences are saved.
 
-- What name/greeting they want, which topics and sources they enjoy, and what they want less of or excluded.
-- Which language the paper should be in. Assume the language they write to you in, and confirm it; the paper is
-  always in the reader's language, whatever it is (see "Language" below). Write the greeting in that language.
-- Whether to include weather (and which city), YouTube channels, or markets. Offer X only when you have the needed access.
-- The reader’s time zone, and whether this is a one-off paper or a daily routine. Ask for a ready time if they want a schedule.
+English and Swedish interface strings are built in. For another language, run `python3 -m sharectl_edition strings --lang en`, translate the values into `config.strings`, and preserve placeholders, list order, and time/date patterns. Translate greeting and section labels too. Headlines and summaries remain in the sources' languages.
 
-For example: "What should I call you, and what would you like in your paper? Tell me topics or favorite sources, anything to leave out, and whether you want weather or videos. I'll make it in Swedish unless you'd rather have another language. Is this a one-off edition or something you want every morning?"
+## 3. Build and show the paper
 
-Suggest a small set of sources when helpful. Find RSS/Atom URLs yourself for named sites and verify that they parse. Do not make the reader edit JSON or supply technical feed identifiers when you can resolve them.
-
-**Wait for the answer.** Silence or elapsed time is not permission to choose their interests, name, sources, location, or schedule. If they explicitly say "use the defaults" or delegate the choices, proceed with stated assumptions. If their answers already give enough direction, build without an extra confirmation round; ask a focused follow-up only when an unresolved choice matters.
-
-After the answers:
-
-1. Create a private working config from `config.example.json`, applying the reader's choices. The starter has no sources, topic preferences or optional modules. Replace the Reader/English/UTC placeholders from the reader’s answers; do not infer a location from them. Never copy examples/config.json or demo subscriptions into a reader’s settings. Omit unrequested optional modules. Use `publish.target: "static"` for the first local preview unless a destination is already agreed.
-2. Save it at a stable path outside the published output folder. Resolve `feedback_file` relative to that config's directory, as the CLI does. Keep using this config for future builds and preference updates.
-3. Parse the saved JSON and check the relevant values. Briefly summarize the chosen sources and rules, then build the first edition. Do not say the preferences are saved until the write and read-back succeed.
-
-Never put tokens or passwords in `config.json`. Credentials live in environment variables only.
-
-### Language
-
-Every word the page itself says (masthead, weather, markets, section labels, the "why" section, the closing line,
-date and time formats) comes from one table of strings, so the paper reads naturally in any language. Use the
-reader's language, not yours:
-
-- Set `"language"` to their code (`"en"`, `"sv"`, `"de"`, `"ja"`, ...). English and Swedish are built in.
-- For any other language, translate the table yourself and put it under `"strings"` in `config.json`:
-  ```bash
-  python3 -m sharectl_edition strings --lang en      # prints the English table as JSON
-  ```
-  Translate every value, keep the `{placeholders}`, and keep `"time"` a strftime pattern (`"%H:%M"` for 24-hour clocks).
-  `"days"` and `"months"` are lists, Monday and January first; `"date"` is the pattern they go into.
-  `"decimal"`, `"thousands"` and `"percent"` set how numbers are written (`","`, `" "` and `"{n} %"` for most of Europe).
-  Keys you leave out fall back to the built-in table (English for an unknown language).
-- `"strings"` also works for a built-in language when the reader wants a word changed ("call it Markets, not Börsen").
-- Section titles and subtitles in `sections`, the weather `place`, and the markets `title` are plain text you write
-  in the reader's language too. Headlines and summaries stay in whatever language the sources publish in.
-
-## 3. Build
+Using the saved paths (the following assumes `config.json` in the repository):
 
 ```bash
 python3 -m sharectl_edition build --config config.json --out site/
 ```
 
-Writes `site/index.html` (today), `site/YYYY-MM-DD/index.html` (archive) and `site/report.json`
-(what was read, kept and skipped per source). Read the report: if a source has `"ok": false`, tell the user and
-suggest another feed. Look at the page (screenshot it if you can) before you send the link.
+This writes `site/index.html`, a dated archive, and `site/report.json`.
 
-### X (optional)
-This package never logs in to X. Fetch the user's home timeline with your own X tool (API v2 shape with
-`expansions=author_id,attachments.media_keys,referenced_tweets.id` and user/media fields), save the raw JSON to the
-path in `sources.x.timeline_file`, set `sources.x.enabled: true`, then build. Posts are capped per account by
-`rules.max_per_x_account`.
+Read the report and inspect the page using the environment's preview/browser tools when available. If a feed fails, try a working feed from the same source; otherwise report the missing source and show the usable edition. If no stories were fetched, fix the feeds or explain the failure; do not present an empty page as a successful first paper or substitute fictional demo content.
 
-## 4. Publish
+Open `site/index.html` in the reader's local preview or browser, or attach the HTML using the environment's supported file delivery. Provide a clickable file link as well when supported. Verify that the output file exists; do not give a public URL for a local file. If preview is unavailable, deliver the file with a short instruction to open it in a browser.
 
-Pick what fits the user and set `publish.target`:
+Keep the handoff short: the paper, any material missing sources, and an invitation to tell you what to change. Do not end with a hosting or scheduling question.
 
-- **`github` (recommended default)**: Pushes the built site to a `gh-pages` branch in the reader's own GitHub repository. The agent needs git push access (already configured if running in the repo). Set `publish.repo_url` (or leave empty to use the current repo's origin), and `publish.branch` (default: "gh-pages"). GitHub Pages must be enabled in the repo settings (Settings > Pages > Source: Deploy from a branch > gh-pages). The site will be live at `https://USERNAME.github.io/REPO-NAME/`.
+## 4. Save changes through conversation
 
-- `cloudflare`: The user's own Cloudflare Pages project. Needs `CLOUDFLARE_API_TOKEN` (Account > Cloudflare Pages > Edit) and `CLOUDFLARE_ACCOUNT_ID` in the environment, and `publish.project`. Ask the user to create the token; never ask for their password.
+Read the same config and feedback file, apply the requested change, and read back the result. Preserve unrelated choices. If an existing file is malformed, resolve the error rather than silently replacing it. Do not rely on chat memory as the preference store.
 
-- `sharectl`: POSTs the HTML to `publish.url` with `Authorization: Bearer $SHARECTL_TOKEN` if set.
-
-- `static`: The folder is the paper. Show it in chat, or upload it to any static host.
-
-```bash
-python3 -m sharectl_edition publish --config config.json
-```
-
-**GitHub Pages first-time setup:**
-1. The agent runs `publish` which creates/updates the `gh-pages` branch automatically
-2. Tell the user to enable Pages: go to the repo on GitHub → Settings → Pages → Source: "Deploy from a branch" → Branch: `gh-pages` → Save
-3. The site will be live at `https://USERNAME.github.io/REPO-NAME/` in ~1 minute
-
-Ask before publishing anywhere public the first time. Send the user the link afterwards, with a two or three sentence summary of what stood out today. No "why I included this" notes on the page itself.
-
-## 5. Daily routine
-
-Only set up a daily routine when the user requests one. Use the platform's supported scheduler and the agreed time zone and ready time; start about 30 minutes earlier where appropriate. If scheduling is unavailable, say so rather than promise automatic editions.
-
-The job must use the same absolute config path and preference file as the conversation. Each run reads the latest saved settings, refreshes X only if enabled, builds/publishes to the agreed destination, checks `report.json`, and delivers the result through the agreed channel. Do not embed an old copy of the preferences in the job prompt. Report scheduling as complete only after the scheduler confirms it.
-
-## 6. Save changes requested in conversation
-
-The page has no voting buttons. Requests to change topic coverage, exclude a subject, or add a source are editing instructions. Apply them to the reader's saved settings, rather than merely acknowledging them or relying on chat memory.
-
-1. Read the current config and its resolved `feedback_file` from disk. If an existing file is malformed, preserve it and resolve the error; do not silently replace it with defaults.
-2. Translate the request using the table below. Preserve unrelated settings. Resolve a named source to its configured ID. Ask only when ambiguity would materially change the result.
-3. Write the changed JSON, then read it back and verify the intended values. CLI weight commands are additive: do not replay them on retries or later turns just because the instruction remains in chat history. Check whether the requested change was already applied.
-4. Confirm briefly what was saved and that it applies to future builds. If saving fails, report that failure instead of claiming success.
-5. Rebuild today's edition when requested ("change today's paper" counts). Otherwise saving the preference is enough. Distinguish "preferences saved", "edition rebuilt", and "published"; publishing uses the existing authorization and destination.
-
-### Translate requests into persistent settings
-
-| Reader request | Save this change |
+| Request | Saved change |
 | --- | --- |
-| Increase coverage of a reader-chosen topic | Add relevant terms to `rules.boost_keywords`; move the corresponding section earlier if appropriate. Do not use a negative keyword weight: that demotes the topic. |
-| Reduce coverage of a reader-chosen topic | Apply a modest negative keyword weight, e.g. `feedback mute KEYWORD -0.5`. This reduces ranking, not a guarantee of fewer stories. |
-| Exclude a reader-chosen subject | Add the requested keywords to `rules.mute_keywords`. A negative weight alone does not exclude stories. |
-| Adjust the reader’s requested political coverage | Change `rules.max_political` only to match the reader’s explicit preference. Use `null` for no cap and `0` to exclude matching news. This cap applies to news only; use explicitly requested `mute_keywords` for exclusions across news, videos and posts. Match the keyword list to the reader’s language and topics; keyword filtering is not perfect classification. |
-| Increase coverage from a reader-chosen source | To allow more stories, increase that RSS source's `cap` within the overall news limit. Source weights affect scoring but do not by themselves increase its RSS quota. |
-| Limit a reader-chosen source | Set its `cap` to the requested number. |
-| Hide a reader-chosen source | Run `feedback hide SOURCE_ID` with the active config; use the actual configured source ID. |
-| "Add/remove a source or YouTube channel" | Edit the appropriate `sources` list, resolve feed/channel identifiers and check new feeds. Preserve the other subscriptions. |
-| "Remove weather" | Set `modules.weather` to `null`. |
-| "Make it in German" / "call it Markets, not Börsen" | Set `language`; for a language that is not built in, translate the strings table into `strings` (see "Language"). A single changed word goes into `strings` too. Rewrite `greeting`, section titles and subtitles in that language. |
-| Restore an excluded subject | Remove the matching exclusion and any conflicting saved keyword penalty; preserve unrelated preferences. |
-| "Show my preferences" | Read and summarize both the config and preference file, including exclusions and caps. This is read-only. |
+| Increase a topic | Add relevant `rules.boost_keywords`; adjust section order if useful. This changes ranking, not a guaranteed topic quota. |
+| Reduce a topic | Apply a modest negative keyword weight with `feedback mute KEYWORD -0.5`. This demotes; it does not exclude. |
+| Exclude a subject | Add the requested words to `rules.mute_keywords`. |
+| More/fewer items from a source | Adjust that RSS source's `cap`; source weights alone do not increase its quota. |
+| Hide a source | Use `feedback hide SOURCE_ID` with its configured ID. |
+| Add/remove a source | Update the relevant sources list; resolve and check new feeds. |
+| Adjust political coverage | Set `rules.max_political` only on request: `null` is unlimited, `0` excludes matching news. Match `political_keywords` to the content language. This cap affects news only; explicit mute keywords also filter videos and posts. |
+| Restore a subject | Remove its exclusion and conflicting saved penalty. |
+| Show preferences | Read and summarize the config and feedback file. |
 
-CLI examples (replace `config.json` with the active config path):
+Feedback commands use `python3 -m sharectl_edition feedback ... --config config.json`. Weight commands are additive: check the saved state before retrying. Rebuild and show the paper when requested; otherwise confirm that the changes are saved for future builds. For “only today”, use a temporary config and separate feedback file.
 
-```bash
-python3 -m sharectl_edition feedback mute KEYWORD -0.5 --config config.json
-python3 -m sharectl_edition feedback hide SOURCE_ID --config config.json
-python3 -m sharectl_edition feedback show --config config.json
-```
+## Boundaries
 
-For "only today", use a temporary config and separate preference file for that build; do not change the persistent settings or schedule. For a reversal or reset, change only the named preferences unless the user explicitly requests a full reset.
+Link to the publisher for the full story. Keep only headlines, short summaries, images and credited bylines; never invent authors. Respect source access restrictions. Keep config, feedback, timeline files and credentials private, outside any shared output.
 
-## House rules
-- Link out to the publisher. Headline, short summary, lead image and byline only.
-- Writers before outlets: show the person's name and photo when the page credits one, the outlet logo otherwise. Never invent a byline.
-- The fetcher honors robots.txt for article pages and identifies itself as `sharectl-edition`. Respect each site's terms; drop a source if it objects.
-- Keep the user's config, feedback and timeline files private. Don't commit them anywhere public.
+Public publishing and daily scheduling are separate, explicitly requested work. Agree on destination or timing then, use the same saved reader settings, and confirm completion only after the relevant tool succeeds. The first local paper needs neither.
