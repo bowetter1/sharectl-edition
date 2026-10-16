@@ -5,7 +5,7 @@ description: Build a reader's first personal newspaper as local HTML from their 
 
 # sharectl-edition
 
-Get the reader to a newspaper they can open and react to. Handle the files and commands yourself. Hosting and scheduling are later steps, only when requested; do not include them in the first-edition interview.
+Get the reader to a newspaper they can open and react to. Handle the files and commands yourself. Offer hosting and scheduling after delivering the first edition; do not include them in the first-edition interview. Set them up only if the reader opts in.
 
 ## 1. Find out what they want to read
 
@@ -54,7 +54,13 @@ Read the report and inspect the page using the environment's preview/browser too
 
 Open `site/index.html` in the reader's local preview or browser, or attach the HTML using the environment's supported file delivery. Provide a clickable file link as well when supported. Verify that the output file exists; do not give a public URL for a local file. If preview is unavailable, deliver the file with a short instruction to open it in a browser.
 
-Keep the handoff short: the paper, any material missing sources, and an invitation to tell you what to change. Do not end with a hosting or scheduling question.
+Keep the handoff short: show or attach the paper first, mention any material missing sources, and invite feedback. Once that first usable edition has been delivered, ask in the reader's language:
+
+> Would you like a web address for your paper and a new edition automatically every morning?
+
+The reader may choose hosting, scheduling, both, or neither. Ask once after the first delivery, not after every rebuild; use any choice already given instead of asking again. A failed or empty build is not the moment for this offer.
+
+If they opt in, resolve only the missing details for the option they chose: an agreed hosting destination and required access, and/or a ready time, time zone, and delivery channel. Use the platform's supported scheduler and the same absolute config and feedback paths so later preference changes carry through. Obtain agreement before first public publication. If hosting access or scheduling support is unavailable, explain what is missing without promising completion. Provide the verified public link or confirmed schedule after setup succeeds. If they decline or do not answer, leave the local edition available without setting anything up.
 
 ## 4. Save changes through conversation
 
@@ -78,4 +84,4 @@ Feedback commands use `python3 -m sharectl_edition feedback ... --config config.
 
 Link to the publisher for the full story. Keep only headlines, short summaries, images and credited bylines; never invent authors. Respect source access restrictions. Keep config, feedback, timeline files and credentials private, outside any shared output.
 
-Public publishing and daily scheduling are separate, explicitly requested work. Agree on destination or timing then, use the same saved reader settings, and confirm completion only after the relevant tool succeeds. The first local paper needs neither.
+Public publishing and daily scheduling follow the reader’s opt-in after the first edition (or an earlier explicit request). Confirm completion only after the relevant tool succeeds; offering these options is not permission to activate them. The first local paper needs neither.

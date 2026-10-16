@@ -12,7 +12,7 @@ Your first edition is a local web page with headlines, short summaries, images, 
 
 Read it, then tell the same AI what to change: add a source, adjust coverage, or leave something out. It saves your choices for the next edition. Ask it to rebuild when you want to see the changes immediately.
 
-**Start by reading.** Hosting and automatic daily editions can wait until you ask for them.
+**Start by reading.** After showing your first paper, your AI asks whether you want a web address and automatic daily editions. You can choose either, both, or keep reading locally. If you opt in, it helps you choose hosting and a delivery time.
 
 ## See the layout
 
