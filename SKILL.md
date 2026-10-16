@@ -31,9 +31,7 @@ Before you fetch anything, you need the reader's answer to four things:
 
 Your first reply asks, in one short message and in the reader's language, for whichever of these their message hasn't answered. In the same message, say which sources you can't reach (for example X). See [Handling missing tools](#handling-missing-tools).
 
-- If their message answers all four, start fetching. "Make me a newspaper using this repo" answers none of them.
-- Something the reader didn't mention is not answered. Don't assume "none": ask.
-- "None", "no" and "you choose" are answers. Don't ask again.
+- If their message answers all four, start fetching. Anything it doesn't mention is unanswered, so ask; "none" and "you choose" are answers.
 - **Saved preferences** (your memory, earlier conversations, files from an older version of this repo) are a suggestion, not an answer. Show them in one line and ask: "Same as last time, or change something?"
 - If you can't tell the reader's time zone (for example from the weather place), ask for it too.
 - If you can't talk to the reader directly (another program started you), return your questions as your result and stop.
@@ -62,11 +60,11 @@ All of these are free and need no API key:
 | Sports results | ESPN: `https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard?dates=YYYYMMDD`, for example `basketball/nba`, `hockey/nhl`, `football/nfl`, `soccer/eng.1` |
 | NHL players | Goals: `https://api-web.nhle.com/v1/score/YYYY-MM-DD`. Stats: `/v1/gamecenter/{id}/boxscore`. Nationality: `birthCountry` in `/v1/roster/{TEAM}/current` |
 | Markets | Yahoo: `https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=1d` for the daily change, and `?range=1d&interval=15m` for the sparkline. Symbols include `^GSPC`, `^IXIC`, `^DJI`, `^OMX`, `^FTSE`, `^GDAXI`, `^N225`, `^HSI`, `^KS11` and `000001.SS` |
-| Article images | The feed's `media:content`, `media:thumbnail` or `enclosure`, otherwise the article page's `og:image` |
+| Article images | The feed's `media:content`, `media:thumbnail` or `enclosure`, or the first `<img>` in the entry's content (The Verge, many blogs). Otherwise the article page's `og:image` |
 
 **Market changes:** compute the daily change from the last two daily closes (`range=5d&interval=1d`). Don't use `chartPreviousClose` from the 1-day chart: for some exchanges it is a close from two sessions back, and the sign of the change comes out wrong.
 
-**Sports:** results APIs list both teams. Check which one is home before you write "A beat B 4–3". Match players across calls by their ID, not their name, and take the full name from `firstName` and `lastName`: the NHL API writes scorers as "A. Johansson", and Detroit has both an Anton and an Albert.
+**Sports:** check which team is home before you write "A beat B 4–3". Match players by ID, and take full names from `firstName` and `lastName`; the NHL API abbreviates scorers ("A. Johansson").
 
 Aim for:
 - ~10-20 articles across topics
@@ -126,7 +124,7 @@ Remove every block you have no content for, and the section pill that points to 
 | Video | `section.tv#video` | One video file. Remove unless you have a direct video URL |
 | X posts | `section.roster#x` → `article.it.rost` | Remove if you have no X access |
 | YouTube | `section.play#youtube` → `article.p-art` with `button.yt` and `data-id` | Remove if you have no videos |
-| Footer | `footer.foot` | Keep the "tell your agent" line (see [Footer line](#footer-line)) |
+| Footer | `footer.foot` | Keep "Want changes? Just tell your agent.", in the reader's language |
 
 ### Morning modules
 
@@ -137,7 +135,7 @@ Remove every block you have no content for, and the section pill that points to 
 ### Details
 
 - **Byline** (`.by`): `span.av` with two initials and a color in `--c`, then `<b>` name and `<small>` source · time. Use the author's initials, or the publisher's when there is no author ("The Verge" → "TV"). Put the same `--c` on the `article`.
-- **Images** are optional. `a.bild` wraps the image. Large images (`.bild.hel`) also set `style="--img:url('…')"` for the blurred fill. No image? Remove the whole `a.bild`.
+- **Images:** use the story's image whenever it has one. `a.bild` wraps it, and large images (`.bild.hel`) also set `style="--img:url('…')"` for the blurred fill. No image? Remove the whole `a.bild`.
 - **Links:** every headline links to the original. Write `&` in URLs as `&amp;`.
 - **Headlines** keep the source's wording, on one line: headlines use `white-space: pre-line`, so a line break inside one shows on the page.
 - **Times** are in the reader's local time. Pick the greeting from it ("Good morning", "Good evening").
@@ -164,7 +162,7 @@ Then:
 
 ## Step 6: Remember, and confirm next time
 
-Use your memory or conversation history to remember:
+Use your memory or conversation history, not config files, to remember:
 - Their interests (topics, sources, people, morning modules, time zone)
 - What they liked or didn't like
 - Any adjustments they requested
@@ -178,19 +176,11 @@ Next time they ask for a newspaper, still start with Step 1: show what you remem
 
 ## Handling missing tools
 
-**No X/Twitter access?**
-- Say: "I don't have X access, so I'll focus on web articles and videos"
-- Continue with what you have
+- **No X access:** say so in Step 1 and leave out the X section.
+- **No YouTube access:** try the channel's feed (see [Where to get things](#where-to-get-things)), otherwise leave out the videos.
+- **No web access at all:** say you can't fetch news right now. Don't fake content.
 
-**No YouTube access?**
-- Try the channel's feed first (see [Where to get things](#where-to-get-things))
-- If that fails too, skip the videos section
-
-**No web access at all?**
-- Be honest: "I can't fetch news right now without web access"
-- Don't fake content
-
-## Example conversation flows
+## Examples
 
 **User:** "Make me a newspaper using https://github.com/bowetter1/sharectl-edition"
 
@@ -203,61 +193,11 @@ Next time they ask for a newspaper, still start with Step 1: show what you remem
 >
 > I can't reach X, so there won't be any posts from there."
 
-**User:** "AI and climate. The Verge and Simon Willison. No YouTube. Weather for Oslo."
-
-**You:**
-1. ✅ "Got it! Fetching AI and climate from The Verge and Simon Willison, plus the weather in Oslo..."
-2. 🔍 Fetch the two feeds and the Oslo forecast
-3. 📝 Select the best content, fill blocks from template.html, and remove the video, X, YouTube and sports blocks
-4. ✔️ Run the checks in Step 5, then save as index.html
-5. 📰 Show/attach: "Here's your edition! Open index.html to read."
-
----
-
 **User:** "Make me a newspaper with AI/tech news, startups, NBA. Include The Verge, Hacker News, Simon Willison, ESPN, and @fireship on YouTube."
 
-This answers topics, sources and YouTube, so ask only what's missing:
+**You:** (this answers topics, sources and YouTube, so ask only what's missing)
 > "Want weather, NBA results or markets at the top? I can't reach X, so there won't be any posts from there."
 
 **User later:** "Less NBA, add more cybersecurity."
 
-**You:**
-1. ✅ "Got it, I'll remember: less basketball, more cybersecurity."
-2. 🧠 Store in conversation memory
-3. Next edition: confirm in one line, then adjust accordingly
-
-## Footer line
-
-Always keep this line in the footer, in the reader's language:
-```html
-<p>Want changes? Just tell your agent.</p>
-```
-
-This reminds readers they can ask you to adjust the newspaper.
-
-## What NOT to do
-
-❌ Don't fetch anything before the reader has answered Step 1  
-❌ Don't reuse remembered preferences without asking  
-❌ Don't republish full article text (just headlines + short summaries)  
-❌ Don't fake content, results or numbers  
-❌ Don't publish empty sections or notes about missing content  
-❌ Don't skip attribution (always credit sources)  
-❌ Don't write markup that isn't in template.html  
-❌ Don't require the user to install anything  
-❌ Don't create config files (remember in your memory)  
-
-## What to DO
-
-✅ Ask first, then wait for the answer  
-✅ Use feeds before web search  
-✅ Link every headline to its source  
-✅ Keep summaries brief (2-3 sentences)  
-✅ Respect the reader's preferences  
-✅ Say upfront if you're missing tools (X, YouTube)  
-✅ Remember their feedback for next time  
-✅ Keep the same visual design (don't modify CSS)  
-
----
-
-**That's it!** Ask → Wait → Fetch → Select → Fill → Check → Save → Show → Remember.
+**You:** remember it, and next time confirm it in one line before you fetch.

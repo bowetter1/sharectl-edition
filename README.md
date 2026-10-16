@@ -78,7 +78,7 @@ Test it the way a new reader meets it:
 2. Paste: "Make me a newspaper using https://github.com/bowetter1/sharectl-edition"
 3. The first reply should be the questions from Step 1, and nothing should be fetched before you answer.
 4. Answer, then check the `index.html` against Step 5 of `SKILL.md`, and that numbers and results match their sources.
-5. Repeat with more than one model, including a small one. Every AI is a customer, and the small ones show where the instructions are vague.
+5. Repeat with the models readers are likely to use, such as Sonnet and Opus. The skill is written for strong models; small ones such as Haiku may skip the questions.
 
 ## Part of sharectl
 
