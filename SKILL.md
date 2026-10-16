@@ -1,6 +1,8 @@
-# sharectl-edition: Personal Newspaper Bot Skill
+# sharectl-edition: Personal Newspaper Agent Skill
 
-**What this is:** A simple HTML template for AI bots to create personalized newspapers for their users. No Python, no templating engines—just plain HTML that any bot can fill by hand.
+**What this is:** A plain HTML template that an AI agent fills to make a reader their own newspaper. No Python, no templating engine: you copy blocks from `template.html` and fill them in by hand.
+
+> **Your first reply is always the interview in Step 1.** Do not search, fetch or fill anything until the reader has answered. Preferences you remember from earlier are a suggestion to confirm, not an answer.
 
 ## When to use this skill
 
@@ -11,29 +13,31 @@ Use this skill when:
 
 ## How it works
 
-1. **Interview the reader** about their interests
+1. **Ask** the reader what to include, and wait for the answer
 2. **Fetch content** using your own tools (web search, RSS, X, YouTube, etc.)
 3. **Select stories** based on what they asked for
-4. **Fill template.html** with the selected content
+4. **Fill blocks** copied from `template.html`
 5. **Save as index.html** locally and show/attach it to the user
-6. **Remember preferences** for next time
+6. **Remember preferences**, and confirm them next time
 
-## Step 1: Interview the reader
+## Step 1: Ask first (always)
 
-Ask what they want to read. Be conversational and brief. Get:
-- **Topics**: AI/tech, politics, business, sports, science, culture, etc.
-- **People**: Specific journalists, experts, creators they follow
-- **Sources**: 
-  - News sites (The Verge, Ars Technica, Hacker News, etc.)
-  - X/Twitter accounts (@username format)
-  - YouTube channels (@channelname or channel URLs)
+Your first reply is the interview. Do not search, fetch or fill anything until the reader has answered.
 
-**Example questions:**
-- "What topics interest you?"
-- "Any specific people or sources you follow?"
-- "YouTube channels you watch?"
+In one short message, in the reader's language, ask:
 
-If they've already told you their interests in their request, skip this and start fetching.
+1. What topics do you want to read about?
+2. Which people or sources do you follow (sites, writers, X accounts)?
+3. Any YouTube channels?
+4. Weather, sports or markets at the top? If so: which place, team or market?
+
+In the same message, say which sources you can't reach (for example X). See [Handling missing tools](#handling-missing-tools).
+
+**When you may skip a question:** only when the reader's current message already answers it. "Make me a newspaper using this repo" answers none of them.
+
+**Saved preferences** (your memory, earlier conversations, files from an older version of this repo) are a suggestion, not an answer. Show them in one line and ask: "Same as last time, or change something?"
+
+Then wait for the reply before you go on to Step 2.
 
 ## Step 2: Fetch content with your own tools
 
@@ -42,8 +46,9 @@ Use whatever tools you have available:
 - **RSS feeds** if you can access them
 - **X/Twitter API** if you have access (optional—skip if not available)
 - **YouTube** for video content
+- **Weather, sports and market data** only if the reader asked for them in Step 1
 
-**If you lack X or YouTube access:** Say so upfront, then continue without it. The newspaper works fine with just web articles.
+**If you lack X or YouTube access:** you already said so in Step 1. Continue without it. The newspaper works fine with just web articles.
 
 Aim for:
 - ~10-20 articles across topics
@@ -71,126 +76,47 @@ Aim for:
 
 ## Step 4: Fill template.html
 
-Open `template.html` and look for HTML comments marked `<!-- FILL: ... -->` and `<!-- REPEAT: ... -->`.
+`template.html` is the only source of markup. Copy its blocks and fill them in; don't write your own markup or use class names that aren't in it. `examples/example.html` shows a filled edition.
 
-**Key sections to fill:**
+Every place to fill is marked in the template:
+- `<!-- FILL: … -->` and `[UPPERCASE]` placeholders: replace them with real content
+- `<!-- REPEAT: … -->`: copy the block that follows once per item
 
-### Masthead (top of page):
-```html
-<p class="date">Good morning, Friday October 16, 2026</p>
-<h1>Your Edition</h1>
-<p class="intro">Brief greeting or summary</p>
-<ul class="rules">
-  <li>Topic 1</li>
-  <li>Topic 2</li>
-</ul>
-```
+Remove every block you have no content for, and the section pill that points to it.
 
-### Lead story (one only):
-```html
-<article class="lead" style="--c:#f25c7a">
-  <div>
-    <p class="kick">SECTION NAME</p>
-    <h2>Headline</h2>
-    <p class="dek">Summary paragraph</p>
-    <div class="by">
-      <span class="av" style="--c:#f25c7a">IN</span>
-      <span>
-        <b>Author/Source Name</b>
-        <small>Time ago</small>
-      </span>
-    </div>
-    <div class="why">
-      <span class="dot"></span>
-      <span>Why: [reason you picked this]</span>
-    </div>
-  </div>
-  <a href="URL" class="lph">
-    <img src="IMAGE_URL" alt="">
-  </a>
-</article>
-```
+### Blocks, top to bottom
 
-### Regular article cards:
-```html
-<article class="card" style="--c:#0066cc">
-  <a href="URL" class="ph">
-    <img src="IMAGE_URL" alt="">
-  </a>
-  <h3><a href="URL">Headline</a></h3>
-  <p class="dek">Summary</p>
-  <div class="by">
-    <span class="av" style="--c:#0066cc">AS</span>
-    <span>
-      <b>Source</b>
-      <small>Time ago</small>
-    </span>
-  </div>
-  <div class="why">
-    <span class="dot"></span>
-    <span>Reason</span>
-  </div>
-</article>
-```
+| Block | Markup in template.html | What goes in it |
+|---|---|---|
+| Title | `<title>`, `og:title`, `og:description` | Date and greeting. Set `<html lang>` and `og:locale` to the reader's language |
+| Masthead | `header.huvud` → `.h-rad` (date · sharectl · tagline) and `.h-namn` (greeting) | "Friday 16 October 2026", "Good morning." |
+| Section pills | `.snav` → one `a.pill` per section (`href="#id"`, `data-t`, `--s` color, count in `<span>`), then `button.why-btn` | One pill per section you keep |
+| Why panel | `aside.varfor` → `.vin` | How many items you read and chose, and the reader's rules as `<li>` |
+| Morning | `section.morgon` → `.m-mod.vader`, `.m-mod.hockey`, `.m-mod.borsen` | Only the modules the reader asked for. Remove the rest, or the whole section |
+| Lead story | `section.forsta#topp` → `article.it.f-art` | The one most important story |
+| Latest | `aside.f-side` → `ol.senaste` → `li` | 4–6 recent headlines: time, link, section, source |
+| Section | `section.avd` with `id="s-…"` and the section color in `--s`, then `header.a-head` | One per topic |
+| ↳ Section top | `.topp` → `.t-main article.it.huvud-art` and `.t-side article.it.liten` | The section's main story and 2–3 small ones |
+| ↳ Two columns | `.tva` → two `.spalt` → `article.it` | Medium stories, spread over both columns |
+| ↳ Briefs | `.notiser` → `article.it.notis` | Short items, thumbnail optional |
+| Video | `section.tv` | One video file. Remove unless you have a direct video URL |
+| X posts | `section.roster` → `article.it.rost` | Remove if you have no X access |
+| YouTube | `section.play` → `article.p-art` with `button.yt` and `data-id` | Remove if you have no videos |
+| Footer | `footer.foot` | Keep the "tell your agent" line (see [Footer line](#footer-line)) |
 
-### Video cards:
-```html
-<article class="card vid" style="--c:#ff3b30">
-  <div class="vwrap">
-    <button class="yt" data-id="YOUTUBE_VIDEO_ID" aria-label="Play video" style="background-image:url(THUMBNAIL_URL)">
-      <img src="THUMBNAIL_URL" alt="">
-      <span class="play">
-        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#fff"/></svg>
-      </span>
-    </button>
-  </div>
-  <div class="vtxt">
-    <p class="kick">VIDEO</p>
-    <h3><a href="YOUTUBE_URL">Title</a></h3>
-    <p class="dek">Description</p>
-    <div class="by">
-      <span class="av" style="--c:#ff3b30">YT</span>
-      <span>
-        <b>Channel Name</b>
-        <small>YouTube · Time ago</small>
-      </span>
-    </div>
-  </div>
-</article>
-```
+### Details
 
-### X/Twitter posts:
-```html
-<article class="card" style="--c:#1da1f2">
-  <div class="post">
-    <p class="ptext">Tweet text here</p>
-    <!-- Optional image -->
-    <a href="X_URL" class="pimg">
-      <img src="IMAGE_URL" alt="">
-    </a>
-    <div class="by">
-      <span class="av" style="--c:#1da1f2">UN</span>
-      <span>
-        <b>@username</b>
-        <small>Time ago</small>
-      </span>
-    </div>
-    <a href="X_URL" class="more">View on X →</a>
-  </div>
-</article>
-```
+- **Byline** (`.by`): `span.av` with two initials and the person's color in `--c`, then `<b>` name and `<small>` source · time. Put the same `--c` on the `article`.
+- **Images:** `a.bild` wraps the image. Large images (`.bild.hel`) also set `style="--img:url('…')"` for the blurred fill. No image? Remove the whole `a.bild`.
+- **Links:** every headline links to the original. Write `&` in URLs as `&amp;`.
+- **Headlines** keep the source's wording, on one line: headlines use `white-space: pre-line`, so a line break inside one shows on the page.
+- **Language:** write everything you write yourself (labels, greeting, Why panel, footer) in the reader's language.
+- **Weather:** put one of `v-sol`, `v-halv`, `v-moln`, `v-regn`, `v-sno`, `v-dimma` or `v-aska` on `.vader`. In `ol.timmar` the first `li` is `.nu`, and the last can be `.imorgon` with tomorrow's high in `<b>` and low in `<small>`. Sun and cloud icons are in `examples/example.html`.
+- **Sports:** `.flagga` draws a Swedish flag. Remove it for other countries.
+- **Markets:** `.borsen` and each `li` take `upp` (rose) or `ned` (fell). The sparkline is an SVG polyline in a 100×32 box, and `line.bas` marks the previous close.
+- **Colors:** sections and people carry color; everything else stays black and white. For example `#5b3fd1`, `#0b6bb3`, `#f25c7a`, `#0f766e`, `#ff9500`, `#ff3b30`.
 
-**Avatar colors (--c):** Pick any color. Examples:
-- `#f25c7a` (pink)
-- `#0066cc` (blue) 
-- `#ff9500` (orange)
-- `#30d158` (green)
-- `#ff3b30` (red)
-- `#1da1f2` (twitter blue)
-
-**Avatar initials:** Use 2 letters from source name (e.g., "The Verge" → "TV")
-
-**Images:** If no image available, remove the `<a class="ph">` or `<a class="lph">` wrapper entirely.
+Keep the CSS and the script as they are.
 
 ## Step 5: Save and show
 
@@ -200,10 +126,10 @@ Open `template.html` and look for HTML comments marked `<!-- FILL: ... -->` and 
    - If not: attach/upload the file
 3. **Tell them:** "Open index.html in your browser to read your newspaper"
 
-## Step 6: Remember for next time
+## Step 6: Remember, and confirm next time
 
-Use your bot's memory/conversation history to remember:
-- Their interests (topics, sources, people)
+Use your memory or conversation history to remember:
+- Their interests (topics, sources, people, morning modules)
 - What they liked or didn't like
 - Any adjustments they requested
 
@@ -212,7 +138,7 @@ When they say things like:
 - "Add Ars Technica" → add it to their sources
 - "More AI news" → prioritize AI stories
 
-Then next time they ask "make me another newspaper," you already know their preferences.
+Next time they ask for a newspaper, still start with Step 1: show what you remember in one line and ask "Same as last time, or change something?" Fetch only after they answer.
 
 ## Handling missing tools
 
@@ -228,44 +154,66 @@ Then next time they ask "make me another newspaper," you already know their pref
 - Be honest: "I can't fetch news right now without web search"
 - Don't fake content
 
-## Example conversation flow
+## Example conversation flows
+
+**User:** "Make me a newspaper using https://github.com/bowetter1/sharectl-edition"
+
+**You:** (the interview, nothing else yet)
+> "Happy to. A few quick questions first:
+> 1. What topics do you want to read about?
+> 2. Any people or sources you follow?
+> 3. YouTube channels?
+> 4. Weather, sports or markets at the top? Which place, team or market?
+>
+> I can't reach X, so there won't be any posts from there."
+
+**User:** "AI and climate. The Verge and Simon Willison. No YouTube. Weather for Oslo."
+
+**You:**
+1. ✅ "Got it! Fetching AI and climate from The Verge and Simon Willison, plus the weather in Oslo..."
+2. 🔍 Fetch ~15 articles and the forecast
+3. 📝 Select the best content, fill blocks from template.html, and remove the video, X and sports blocks
+4. 💾 Save as index.html
+5. 📰 Show/attach: "Here's your morning edition! Open index.html to read."
+
+---
 
 **User:** "Make me a newspaper with AI/tech news, startups, NBA. Include The Verge, Hacker News, Simon Willison, ESPN, and @fireship on YouTube."
 
-**You:**
-1. ✅ "Got it! Fetching AI/tech, startups, and NBA coverage from those sources..."
-2. 🔍 Fetch ~15 articles, 3 videos, 5-10 posts
-3. 📝 Select best content, fill template.html
-4. 💾 Save as index.html
-5. 📰 Show/attach: "Here's your morning edition! Open index.html to read."
+This answers topics, sources and YouTube, so ask only what's missing:
+> "Want weather or markets at the top? I can't reach X, so there won't be any posts from there."
 
 **User later:** "Less NBA, add more cybersecurity."
 
 **You:**
 1. ✅ "Got it, I'll remember: less basketball, more cybersecurity."
 2. 🧠 Store in conversation memory
-3. Next edition: adjust accordingly
+3. Next edition: confirm in one line, then adjust accordingly
 
 ## Footer line
 
-Always keep this line in the footer:
+Always keep this line in the footer, in the reader's language:
 ```html
-<p>Want changes? Just tell your bot.</p>
+<p>Want changes? Just tell your agent.</p>
 ```
 
 This reminds readers they can ask you to adjust the newspaper.
 
 ## What NOT to do
 
+❌ Don't fetch anything before the reader has answered Step 1  
+❌ Don't reuse remembered preferences without asking  
 ❌ Don't republish full article text (just headlines + short summaries)  
 ❌ Don't fake content or make up articles  
 ❌ Don't skip attribution (always credit sources)  
+❌ Don't write markup that isn't in template.html  
 ❌ Don't use a templating engine (fill HTML directly)  
 ❌ Don't require the user to install anything  
 ❌ Don't create config files (remember in your memory)  
 
 ## What to DO
 
+✅ Ask first, then wait for the answer  
 ✅ Link every headline to its source  
 ✅ Keep summaries brief (2-3 sentences)  
 ✅ Respect the reader's preferences  
@@ -275,4 +223,4 @@ This reminds readers they can ask you to adjust the newspaper.
 
 ---
 
-**That's it!** Interview → Fetch → Select → Fill → Save → Show → Remember.
+**That's it!** Ask → Wait → Fetch → Select → Fill → Save → Show → Remember.
