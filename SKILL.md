@@ -32,6 +32,7 @@ Before you fetch anything, you need the reader's answer to four things:
 Your first reply asks, in one short message and in the reader's language, for whichever of these their message hasn't answered. In the same message, say which sources you can't reach (for example X). See [Handling missing tools](#handling-missing-tools).
 
 - If their message answers all four, start fetching. "Make me a newspaper using this repo" answers none of them.
+- Something the reader didn't mention is not answered. Don't assume "none": ask.
 - "None", "no" and "you choose" are answers. Don't ask again.
 - **Saved preferences** (your memory, earlier conversations, files from an older version of this repo) are a suggestion, not an answer. Show them in one line and ask: "Same as last time, or change something?"
 - If you can't tell the reader's time zone (for example from the weather place), ask for it too.
@@ -45,6 +46,8 @@ Wait for the reply before you go on to Step 2.
 
 **If your fetch tool refuses a site**, request the same URL with another HTTP tool such as `curl`. Many sites block one but not the other.
 
+**Read data raw.** Take names, numbers and scores from the raw JSON or XML. Some fetch tools pass a page through a model that summarizes it, and the summary can drop or mix up exactly those details. If a summarizing tool is all you have, ask it to quote the fields verbatim.
+
 ### Where to get things
 
 All of these are free and need no API key:
@@ -56,13 +59,14 @@ All of these are free and need no API key:
 | YouTube channel | `https://www.youtube.com/feeds/videos.xml?channel_id=UC…`. Find the `channel_id` in the channel page's source (`channel_id=` or `"externalId"`). The feed has video IDs, titles, dates and thumbnails |
 | Weather, any place | Open-Meteo: find coordinates with `https://geocoding-api.open-meteo.com/v1/search?name=Oslo&count=1`, then `https://api.open-meteo.com/v1/forecast?latitude=…&longitude=…&hourly=temperature_2m,weather_code,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=2` |
 | Weather, Nordics | MET Norway `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=…&lon=…` (send a User-Agent), or SMHI for Sweden |
-| Sports results | ESPN: `https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard?dates=YYYYMMDD`, for example `basketball/nba`, `hockey/nhl`, `football/nfl`, `soccer/eng.1`. NHL player stats: `https://api-web.nhle.com/v1/score/YYYY-MM-DD` and `/v1/gamecenter/{id}/boxscore` |
+| Sports results | ESPN: `https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard?dates=YYYYMMDD`, for example `basketball/nba`, `hockey/nhl`, `football/nfl`, `soccer/eng.1` |
+| NHL players | Goals: `https://api-web.nhle.com/v1/score/YYYY-MM-DD`. Stats: `/v1/gamecenter/{id}/boxscore`. Nationality: `birthCountry` in `/v1/roster/{TEAM}/current` |
 | Markets | Yahoo: `https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5d&interval=1d` for the daily change, and `?range=1d&interval=15m` for the sparkline. Symbols include `^GSPC`, `^IXIC`, `^DJI`, `^OMX`, `^FTSE`, `^GDAXI`, `^N225`, `^HSI`, `^KS11` and `000001.SS` |
 | Article images | The feed's `media:content`, `media:thumbnail` or `enclosure`, otherwise the article page's `og:image` |
 
 **Market changes:** compute the daily change from the last two daily closes (`range=5d&interval=1d`). Don't use `chartPreviousClose` from the 1-day chart: for some exchanges it is a close from two sessions back, and the sign of the change comes out wrong.
 
-**Sports:** results APIs list both teams. Check which one is home before you write "A beat B 4–3".
+**Sports:** results APIs list both teams. Check which one is home before you write "A beat B 4–3". Match players across calls by their ID, not their name, and take the full name from `firstName` and `lastName`: the NHL API writes scorers as "A. Johansson", and Detroit has both an Anton and an Albert.
 
 Aim for:
 - ~10-20 articles across topics
