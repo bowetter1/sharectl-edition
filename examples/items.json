@@ -1,5 +1,7 @@
 {
  "_note": "Fictional sample data. All names, outlets, headlines and numbers are made up.",
+ "batch_id": "demo-batch-001",
+ "fetched_at": "2026-10-16T07:29:51.732134+00:00",
  "news": [
   {
    "id": "ledger-0",
