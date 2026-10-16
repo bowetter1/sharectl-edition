@@ -16,6 +16,7 @@ ol, ul { padding: 0; list-style: none; }
 html:has(.paper) { scroll-padding-top: 64px; scroll-behavior: smooth; }
 .w { width: var(--w); margin-inline: auto; }
 .kicker { font: 700 13px/1.2 var(--sans); color: var(--red); }
+.edition-notice { margin-block: 24px; padding: 16px 20px; border-left: 4px solid #a35f00; border-radius: 6px; background: #fff4d9; font-size: 15px; line-height: 1.5; color: var(--ink); }
 
 /* Masthead: black, like a cover. The section menu sticks while scrolling. */
 .masthead { background: #000; color: #f5f5f7; }

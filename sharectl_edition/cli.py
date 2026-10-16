@@ -69,7 +69,7 @@ def main(argv=None):
         print(json.dumps(w, indent=1, ensure_ascii=False))
         return
 
-    from .build import build, collect
+    from .build import CandidateError, collect
     if a.cmd == "fetch":
         packet = collect(cfg, base, a.from_items)
         with open(a.out, "w", encoding="utf-8") as fh:
@@ -78,14 +78,32 @@ def main(argv=None):
         return 0 if packet['items'] else 1
 
     from .publish import static
+    from . import recovery
 
     out = a.out or os.path.join(base, cfg["publish"].get("out", "site"))
-    html_text, report = build(cfg, base, a.items, a.selection)
+    try:
+        state = recovery.state_path(a.config, out)
+        html_text, report, packet = recovery.build(cfg, base, a.items, a.selection, state)
+    except recovery.RetrySelection as exc:
+        print(f"AI selection needs correction: {exc}", file=sys.stderr)
+        return 2
+    except CandidateError as exc:
+        print(f"Cannot build edition: {exc}", file=sys.stderr)
+        return 1
     date = report["date"][:10]
-    path = static.write(html_text, out, date)
+    if report.get('recovery', {}).get('mode') == 'previous':
+        os.makedirs(out, exist_ok=True)
+        path = os.path.join(out, 'index.html')
+        with open(path, 'w', encoding='utf-8') as fh:
+            fh.write(html_text)
+    else:
+        path = static.write(html_text, out, date)
     with open(os.path.join(out, "report.json"), "w", encoding="utf-8") as fh:
         json.dump(report, fh, ensure_ascii=False, indent=1)
+    recovery.remember(state, packet, html_text, report)
     print(f"wrote {path}  {report['counts']}")
+    if report.get('recovery'):
+        print(f"WARNING: AI selection failed; using {report['recovery']['mode']} edition dated {report['date']}", file=sys.stderr)
 
     if a.cmd == "publish":
         target = cfg["publish"].get("target", "static")
@@ -102,3 +120,4 @@ def main(argv=None):
             print("POST", sharectl.post(html_text, cfg["publish"]["url"], cfg["publish"].get("token_env", "SHARECTL_TOKEN"), date))
         else:
             print(f"static edition ready in {out}/ (open index.html, or serve the folder anywhere)")
+    return 0

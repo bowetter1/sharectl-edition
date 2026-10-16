@@ -42,7 +42,7 @@ English and Swedish interface strings are built in. For another language, run `p
 
 ## 3. Build and show the paper
 
-The AI running this skill is the editor. Python only collects candidates and renders your explicit selection; it does not call a model or rank stories.
+The AI running this skill is the editor. Python collects candidates and renders your explicit selection; it does not call a model. After one failed correction it can show a visibly labelled reserve, as described below.
 
 Using the saved paths (keep candidate and selection files outside the public output):
 
@@ -78,7 +78,15 @@ Review your selection against the saved preferences, then render:
 python3 -m sharectl_edition build --config config.json --items candidates.json --selection selection.json --out site/
 ```
 
-This writes `site/index.html`, a dated archive, and `site/report.json`. The builder rejects empty selections, invented or duplicate IDs, unknown sections, changed preferences and mismatched batches before writing. It does not judge editorial compliance; that is your responsibility. Inspect the report and preview the page. Fix selection mistakes and rebuild using the same candidate batch. If preferences change, fetch again and make a new selection.
+This writes `site/index.html`, a dated archive, and `site/report.json`. The builder validates empty selections, invented or duplicate IDs, unknown sections and mismatched batches before writing. It does not judge the normal AI selection's editorial compliance; that is your responsibility.
+
+Handle the command's result explicitly:
+
+- **Exit 2:** read the validation error, correct `selection.json` once and rerun the exact same command with the same candidates and output path. Do not fetch again to reset the retry. Python stores the attempt in private `.edition-state/` beside the config, so a separate command process can continue it.
+- **Exit 0:** inspect `report.json` and preview the page. If the corrected selection also failed, `recovery.mode` is `previous` or `latest` and the terminal prints a warning. Deliver that labelled edition and mention the recovery briefly. Do not remove the warning or describe an old edition as today's. A previous edition keeps its original date; only the current index changes and its archived copy stays intact.
+- **Exit 1:** the candidates or saved preferences are invalid, or no eligible reserve items remain. Report the reason and preserve existing output. Changed preferences require a fresh fetch and a new AI selection; never bypass validation or loosen exclusions to force a paper.
+
+The reserve first reuses a verified successful AI edition with exactly the same reader settings and feedback. If none exists, it selects the latest dated candidates using saved hidden identities, literal mute keywords, source/channel/account and total limits (including zero), freshness, image requirements and political keyword caps. It cannot apply semantic topic matching or boosts. With a political cap and no political keywords it omits news rather than guessing. Undated, future-dated and expired items are omitted. Older HTML without a private recovery snapshot is not trusted for reuse. Keep `.edition-state/` private, outside the output folder, and preserve it between scheduled runs.
 
 Open `site/index.html` in the reader's local preview or browser, or attach the HTML using the environment's supported file delivery. Provide a clickable file link as well when supported. Verify that the output file exists; do not give a public URL for a local file. If preview is unavailable, deliver the file with a short instruction to open it in a browser.
 

@@ -20,7 +20,7 @@ Read it, then tell the same AI what to change: add a source, adjust coverage, or
 2. **Edit:** your AI chooses stories, removes duplicates, assigns sections and picks the lead story by ID.
 3. **Render:** Python validates those references and fills the HTML template with the original headlines, summaries, links and bylines.
 
-Existing `config.json` and `feedback.json` files are reused without migration. Rules and feedback are instructions for the AI editor, not an automatic ranking algorithm. No model API or API key is built into the package; the AI chat or scheduled agent performs the editorial step.
+Existing `config.json` and `feedback.json` files are reused without migration. Rules and feedback guide the AI editor. No model API or API key is built into the package; the AI chat or scheduled agent performs the editorial step, including one attempt to correct an invalid selection.
 
 ```bash
 python3 -m sharectl_edition fetch --config config.json --out candidates.json
@@ -28,9 +28,22 @@ python3 -m sharectl_edition fetch --config config.json --out candidates.json
 python3 -m sharectl_edition build --config config.json --items candidates.json --selection selection.json --out site/
 ```
 
-Keep both JSON files private, outside `site/`. For publishing, use `publish` with the same arguments. Automatic daily editions require an AI-agent schedule running all three steps. Previous one-step `build` commands must be updated; rendering never silently falls back to rule-based selection.
+Keep both JSON files private, outside `site/`. For publishing, use `publish` with the same arguments. Automatic daily editions require an AI-agent schedule running all three steps. Previous one-step `build` commands must be updated.
 
 For offline layout testing, `fetch --from-items examples/items.json` imports the fictional demo data into a candidate packet; an explicit selection is still required.
+
+## If AI selection fails
+
+The first invalid or missing `selection.json` returns exit code **2**, prints the validation error and asks the AI to correct it once. The AI should repair the selection and rerun the same command with the same candidates and output path, without fetching a new batch. No model call is made by Python.
+
+If that next attempt also fails, `build` and `publish` use this recovery chain:
+
+1. Show the last successfully built AI edition, retaining its original date and adding a visible warning. It is reused only when its saved reader preferences and feedback match the current candidate packet. Dated archives stay unchanged.
+2. If no matching previous edition is available, create a clearly labelled reserve of the latest dated items from each source. It applies hidden sources/authors/handles, literal mute keywords, source/channel/account caps (including zero), total limits, freshness, image requirements and political keyword caps. Semantic topic matching and boosts are unavailable in this reserve; the page says so.
+
+An active political cap without `political_keywords` excludes news from the reserve because it cannot safely classify politics. Undated, future-dated and expired material is omitted. If nothing remains, the command returns **1** and keeps the existing output untouched. Invalid candidate packets or preferences changed since fetching also stop immediately with code **1**, without falling back. Successful normal or reserve builds return **0**; the report records the recovery mode and the terminal prints a warning when a reserve is used.
+
+Private recovery records live in `.edition-state/` beside the config, scoped to that config and output path. Keep this folder outside the published output and preserve it between agent runs. Only successful AI builds made with this version seed a verifiable previous-edition snapshot; older HTML without that record is not reused. A successful AI build resets the correction attempt, and every new candidate batch gets a new attempt. The direct Python `build()` API remains strict and never chooses a reserve implicitly.
 
 ## See the layout
 

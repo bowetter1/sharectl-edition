@@ -4,4 +4,5 @@ __pycache__/
 /feedback.json
 /x-timeline.json
 /site/
+/.edition-state/
 .env

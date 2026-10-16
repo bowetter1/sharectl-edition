@@ -12,6 +12,14 @@ from .fetch import markets, news, weather, x, youtube
 from .render import template
 
 
+class CandidateError(ValueError):
+    """The fetched material or saved preferences cannot safely be used."""
+
+
+class SelectionError(ValueError):
+    """The AI's selection needs correction; candidates are still valid."""
+
+
 def reader_settings(cfg, base_dir):
     """Keep existing preferences; exclude publishing credentials and private paths."""
     keys = ('name', 'greeting', 'timezone', 'language', 'strings', 'sources', 'sections', 'rules', 'modules')
@@ -59,23 +67,61 @@ def collect(cfg, base_dir='.', offline_items=None):
     return packet
 
 
-def build(cfg, base_dir='.', items_path=None, selection_path=None):
-    """Validate an AI selection and fill the template with original candidate data."""
-    if not items_path or not selection_path:
-        raise ValueError('Fetch candidates first; build requires --items and --selection from the AI editor')
-    with open(items_path, encoding='utf-8') as f:
-        packet = json.load(f)
-    with open(selection_path, encoding='utf-8') as f:
-        selection = json.load(f)
+def load_candidates(cfg, base_dir, items_path):
+    """Validate candidates before considering any selection or recovery."""
+    try:
+        with open(items_path, encoding='utf-8') as f:
+            packet = json.load(f)
+    except (OSError, ValueError) as exc:
+        raise CandidateError(f'Cannot read candidates: {exc}') from exc
+    if not isinstance(packet, dict):
+        raise CandidateError('Invalid candidate packet; run fetch again')
     if packet.get('version') != 1 or packet.get('batch_id') != batch_id(packet):
-        raise ValueError('Invalid candidate packet; run fetch again')
+        raise CandidateError('Invalid candidate packet; run fetch again')
+    if packet.get('reader') != reader_settings(cfg, base_dir):
+        raise CandidateError('Reader preferences changed; fetch and select again')
+    try:
+        date = datetime.fromisoformat(packet['date'])
+        if date.tzinfo is None or not isinstance(packet['items'], list) or not isinstance(packet['sources'], dict):
+            raise ValueError()
+        ids = set()
+        for item in packet['items']:
+            for key in ('id', 'kind', 'source', 'source_name', 'title', 'text', 'url'):
+                if not isinstance(item[key], str):
+                    raise ValueError()
+            for key in ('image', 'author', 'author_photo', 'avatar', 'published', 'handle', 'link_out'):
+                if key in item and not isinstance(item[key], str):
+                    raise ValueError()
+            if not isinstance(item.get('coauthors', []), list) or any(not isinstance(name, str) for name in item.get('coauthors', [])):
+                raise ValueError()
+            url = urlsplit(item['url'])
+            if (item['id'] in ids or item['kind'] not in ('news', 'post', 'video')
+                    or url.scheme not in ('https', 'http') or not url.netloc):
+                raise ValueError()
+            ids.add(item['id'])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise CandidateError('Invalid candidate data; run fetch again') from exc
+    return packet
+
+
+def load_selection(selection_path):
+    try:
+        with open(selection_path, encoding='utf-8') as f:
+            selection = json.load(f)
+    except (FileNotFoundError, ValueError) as exc:
+        raise SelectionError(f'Cannot read AI selection: {exc}') from exc
+    if not isinstance(selection, dict):
+        raise SelectionError('AI selection must be a JSON object')
+    return selection
+
+
+def render_selection(cfg, packet, selection, editor='ai', skipped=None):
+    """Render explicit references, preserving source material and editorial order."""
     if selection.get('batch_id') != packet['batch_id']:
-        raise ValueError('Selection belongs to a different candidate batch')
-    if packet['reader'] != reader_settings(cfg, base_dir):
-        raise ValueError('Reader preferences changed; fetch and select again')
+        raise SelectionError('Selection belongs to a different candidate batch')
     chosen = selection.get('items')
     if not isinstance(chosen, list) or not chosen:
-        raise ValueError('AI selection must contain at least one item; previous edition is untouched')
+        raise SelectionError('AI selection must contain at least one item; previous edition is untouched')
     definitions = cfg['sections'] or [{'key': 'news', 'title': 'News'}]
     sections = {s['key']: {**s, 'items': []} for s in definitions}
     candidates = {it['id']: it for it in packet['items']}
@@ -83,33 +129,35 @@ def build(cfg, base_dir='.', items_path=None, selection_path=None):
     counts = {'news': 0, 'posts': 0, 'videos': 0}
     for entry in chosen:
         if not isinstance(entry, dict) or set(entry) != {'id', 'section'}:
-            raise ValueError('Each selection entry must contain only id and section')
+            raise SelectionError('Each selection entry must contain only id and section')
         ident, section = entry['id'], entry['section']
         if not isinstance(ident, str) or not isinstance(section, str):
-            raise ValueError('Item IDs and section keys must be strings')
+            raise SelectionError('Item IDs and section keys must be strings')
         if ident not in candidates or ident in seen:
-            raise ValueError(f'Unknown or duplicate selected ID: {ident}')
+            raise SelectionError(f'Unknown or duplicate selected ID: {ident}')
         if section not in sections:
-            raise ValueError(f'Unknown section: {section}')
+            raise SelectionError(f'Unknown section: {section}')
         item = copy.deepcopy(candidates[ident])
         url = urlsplit(item['url'])
         if url.scheme not in ('https', 'http') or not url.netloc:
-            raise ValueError(f'Invalid article URL: {ident}')
+            raise CandidateError(f'Invalid article URL: {ident}')
         sections[section]['items'].append(item)
         seen.add(ident)
         counts[{'news': 'news', 'post': 'posts', 'video': 'videos'}[item['kind']]] += 1
     lead = selection.get('lead_id')
     if counts['news'] + counts['posts']:
         if not isinstance(lead, str) or lead not in seen or candidates[lead]['kind'] == 'video':
-            raise ValueError('lead_id must identify a selected news item or post')
+            raise SelectionError('lead_id must identify a selected news item or post')
     elif lead is not None:
-        raise ValueError('A video-only edition must have a null lead_id')
+        raise SelectionError('A video-only edition must have a null lead_id')
     tz = ZoneInfo(cfg['timezone'])
     now = datetime.fromisoformat(packet['date']).astimezone(tz)
-    report = {'date': now.isoformat(), 'batch_id': packet['batch_id'], 'editor': 'ai',
+    report = {'date': now.isoformat(), 'batch_id': packet['batch_id'], 'editor': editor,
               'sources': packet['sources'], 'counts': counts,
               'selected_ids': [entry['id'] for entry in chosen], 'lead_id': lead,
-              'skipped': {'not selected by editor': len(candidates) - len(seen)}}
+              'skipped': skipped if skipped is not None else {'not selected by editor': len(candidates) - len(seen)}}
+    if editor == 'fallback':
+        report['recovery'] = {'mode': 'latest', 'attempted_date': packet['date']}
     template.set_language(cfg.get('language'), cfg.get('strings'))
     morning = []
     if packet.get('weather'):
@@ -117,3 +165,11 @@ def build(cfg, base_dir='.', items_path=None, selection_path=None):
     if packet.get('markets'):
         morning.append(template.markets_block(packet['markets'], ((cfg.get('modules') or {}).get('markets') or {}).get('title')))
     return template.page(cfg, [s for s in sections.values() if s['items']], morning, now, tz, report, lead_id=lead), report
+
+
+def build(cfg, base_dir='.', items_path=None, selection_path=None):
+    """Strict library API: CLI recovery handles failed editorial attempts separately."""
+    if not items_path or not selection_path:
+        raise CandidateError('Fetch candidates first; build requires --items and --selection from the AI editor')
+    packet = load_candidates(cfg, base_dir, items_path)
+    return render_selection(cfg, packet, load_selection(selection_path))

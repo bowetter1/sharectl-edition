@@ -35,6 +35,15 @@ def esc_attr(s: str) -> str:
     return html.escape(s or "", quote=True)
 
 
+def notice(message):
+    return f'<aside class="w edition-notice" role="status">{e(message)}</aside>'
+
+
+def with_notice(html_text, message):
+    """Keep a previous edition's date and content, adding one visible notice."""
+    return html_text.replace('<main>', '<main>' + notice(message), 1)
+
+
 def short(text: str, n: int = 110) -> str:
     text = " ".join((text or "").split())
     return text if len(text) <= n else text[:n].rsplit(" ", 1)[0].rstrip(",.;:–-") + "…"
@@ -268,7 +277,8 @@ def why_block(cfg, report, every):
     stats = report.get("sources") or {}
     read = sum(s.get("read", 0) + s.get("videos", 0) + s.get("posts", 0) for s in stats.values())
     kept = sum((report.get("counts") or {}).values()) or len(every)
-    intro = EN["why_ai_intro" if report.get("editor") == "ai" else "why_intro"].format(read=read or "–", n=len(stats) or len({it["source"] for it in every}), kept=kept,
+    intro_key = {'ai': 'why_ai_intro', 'fallback': 'why_fallback_intro'}.get(report.get('editor'), 'why_intro')
+    intro = EN[intro_key].format(read=read or "–", n=len(stats) or len({it["source"] for it in every}), kept=kept,
                                    per_source=rules.get("max_per_source", "–"), political=rules.get("max_political", "–"))
     skipped = report.get("skipped") or {}
     reasons = "".join(f'<li><b>{n}</b> {e(EN["skip_reasons"].get(k, k))}</li>' for k, n in skipped.items() if n)
@@ -277,11 +287,12 @@ def why_block(cfg, report, every):
     return (f'<section class="w why" id="why"><h2>{EN["why_title"]}</h2><p class="why-intro">{e(intro)}</p>'
             f'<div class="why-cols"><div><p class="kicker">{EN["sources_today"]}</p><ul class="src-list">{srcs}</ul></div>'
             + (f'<div><p class="kicker">{EN["why_skipped"]}</p><ul class="skip-list">{reasons}</ul></div>' if reasons else "")
-            + f'</div></section><p class="w the-end">{EN["the_end"]}</p>')
+            + f'</div></section><p class="w the-end">{EN["fallback_end" if report.get("editor") == "fallback" else "the_end"]}</p>')
 
 
 def page(cfg, sections, morning, now, tz, report=None, lead_id=None):
     set_language(cfg.get("language"), cfg.get("strings"))
+    fallback = (report or {}).get('editor') == 'fallback'
     with open(os.path.join(HERE, "edition.css"), encoding="utf-8") as f:
         css = f.read()
     for s in sections:
@@ -303,9 +314,10 @@ def page(cfg, sections, morning, now, tz, report=None, lead_id=None):
     nav = (f'<a class="pill plain" href="#top">{EN["top_story_nav"]}</a>' if lead else "") + "".join(
         f'<a class="pill" href="#{s["key"]}" style="--s:{s["color"]}">{e(s["title"])}</a>' for s in sections)
     nav += f'<a class="pill why-link" href="#why">{EN["why"]}</a>'
-    body = (f'<header class="masthead"><div class="w m-row"><span>{date}</span><b>sharectl</b><span>{EN["tagline"]}</span></div>'
+    body = (f'<header class="masthead"><div class="w m-row"><span>{date}</span><b>sharectl</b><span>{EN["fallback_tagline" if fallback else "tagline"]}</span></div>'
             f'<div class="w m-name"><a href="#top">{e(hello)}</a></div></header>'
             f'<nav class="nav"><div class="w nav-in">{nav}</div></nav><main>'
+            + (notice(EN['fallback_latest']) if fallback else '')
             + (f'<section class="w morning" aria-label="This morning">{"".join(morning)}</section>' if morning else "")
             + (front(lead, news_like, tz) if lead else "")
             + "".join(desk(s) for s in sections)
