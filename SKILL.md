@@ -11,7 +11,7 @@ The page links out to every article; never copy full article text into it.
 ## 1. Install
 
 ```bash
-git clone https://github.com/OWNER/sharectl-edition.git ~/sharectl-edition   # or download the zip
+git clone https://github.com/bowetter1/sharectl-edition.git ~/sharectl-edition   # or download the zip
 cd ~/sharectl-edition
 python3 -m pip install -r requirements.txt   # stdlib only today; the file is kept for future deps
 python3 -m unittest discover -s tests        # should print OK

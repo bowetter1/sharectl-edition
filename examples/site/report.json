@@ -1,14 +1,13 @@
 {
- "date": "2026-10-16T03:27:08.315652-04:00",
+ "date": "2026-10-16T03:29:51.885786-04:00",
  "sources": {},
  "skipped": {
-  "same story as another source": 3,
-  "max per source": 39,
+  "max per source": 3,
   "no room in the edition": 0
  },
  "counts": {
-  "news": 22,
-  "posts": 0,
+  "news": 12,
+  "posts": 2,
   "videos": 6
  }
 }

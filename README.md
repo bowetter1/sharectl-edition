@@ -10,11 +10,11 @@ follow on X. People before outlets, so you see who wrote it. Change the whole pa
 No app, no account, no central server. The code runs in your bot's own sandbox, and the paper is a static page that
 your bot publishes wherever you like.
 
-![Example edition](examples/screenshot.png)
+![Example edition](examples/screenshot.jpg)
 
 ## Quickstart: tell your bot
 
-> Install the sharectl edition skill from https://github.com/OWNER/sharectl-edition and set up my morning paper.
+> Install the sharectl edition skill from https://github.com/bowetter1/sharectl-edition and set up my morning paper.
 
 Your bot reads [`SKILL.md`](SKILL.md), asks you for your sources, rules, name and time zone, builds the first edition
 and sets up a daily routine.
@@ -22,7 +22,7 @@ and sets up a daily routine.
 ## Quickstart: by hand
 
 ```bash
-git clone https://github.com/OWNER/sharectl-edition.git && cd sharectl-edition
+git clone https://github.com/bowetter1/sharectl-edition.git && cd sharectl-edition
 cp config.example.json config.json        # edit name, sources, rules
 python3 -m sharectl_edition build --config config.json --out site/
 open site/index.html
@@ -66,7 +66,7 @@ sharectl_edition/
   render/                 template.py, edition.css, labels.py (all UI strings)
   publish/                static.py, cloudflare.py, sharectl.py
 tests/                    python3 -m unittest discover -s tests
-examples/                 a real edition built from the example config
+examples/                 a sample edition built from made-up data (examples/items.json)
 ```
 
 ## Being a good citizen

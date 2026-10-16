@@ -5,7 +5,7 @@ import urllib.robotparser
 from functools import lru_cache
 from urllib.parse import urlsplit
 
-UA = "sharectl-edition/0.1 (+https://github.com/sharectl/sharectl-edition; personal news reader)"
+UA = "sharectl-edition/0.1 (+https://github.com/bowetter1/sharectl-edition; personal news reader)"
 # Some sites only serve feeds/OG tags to browser-like agents; we still identify as a reader in a comment.
 BROWSER_UA = "Mozilla/5.0 (compatible; sharectl-edition/0.1; personal news reader)"
 
