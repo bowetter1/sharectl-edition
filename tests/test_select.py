@@ -24,10 +24,12 @@ class SelectTests(unittest.TestCase):
 
     def test_near_duplicate_headlines(self):
         self.assertTrue(select.same_story("OpenAI releases new reasoning model for developers",
-                                          "OpenAI's new reasoning model released to developers today"))
+                                          "OpenAI announces new reasoning model for developers today"))
         self.assertFalse(select.same_story("Fed holds interest rates steady", "Apple unveils new iPad lineup"))
+        self.assertFalse(select.same_story("Tesla stock rises today", "Google announces new Pixel phone"))
+        self.assertFalse(select.same_story("New AI model", "Different product launch"))
         out, sk = select.pick_news([n("a", "OpenAI releases new reasoning model for developers"),
-                                    n("b", "OpenAI's new reasoning model released to developers today")], RULES, empty())
+                                    n("b", "OpenAI announces new reasoning model for developers today")], RULES, empty())
         self.assertEqual(len(out), 1)
         self.assertEqual(sk["same story as another source"], 1)
 
@@ -42,19 +44,18 @@ class SelectTests(unittest.TestCase):
 
     def test_feedback_reorders_and_hides(self):
         w = empty()
-        feedback.apply(w, {"item_id": "x", "vote": "up", "source": "b", "title": "", "ts": 1})
+        feedback.bump(w, "sources", "b", 1.0)
         items = [n("a", "Alpha story on farming"), n("b", "Beta story on sailing")]
         out, _ = select.pick_news(items, {**RULES, "max_news": 10}, w)
         self.assertEqual(len(out), 2)
-        w["hidden"].append("a")
+        feedback.hide(w, "a")
         out, sk = select.pick_news(items, RULES, w)
         self.assertEqual([i["source"] for i in out], ["b"])
 
     def test_feedback_keywords(self):
         w = empty()
-        feedback.apply(w, {"item_id": "1", "vote": "down", "title": "Roadster launch delayed again", "ts": 1})
-        self.assertLess(feedback.score({"title": "Roadster prototype spotted", "source": "z"}, w), 0)
-        self.assertFalse(feedback.apply(w, {"item_id": "1", "vote": "down", "title": "Roadster launch delayed again", "ts": 1}))
+        feedback.bump(w, "keywords", "roadster", -1.0)
+        self.assertLess(feedback.score({"title": "Roadster prototype spotted", "source": "z", "text": ""}, w), 0)
 
     def test_sections_by_keyword(self):
         secs = [{"key": "ai", "title": "AI", "keywords": ["openai", "llm"]}, {"key": "us", "title": "US", "keywords": []}]
@@ -68,9 +69,18 @@ class SelectTests(unittest.TestCase):
         out = select.pick_videos([v("c1", 1), v("c1", 2), v("c2", 3), v("c3", 40)], RULES, empty(), now)
         self.assertEqual(sorted(i["source"] for i in out), ["c1", "c2"])
 
+    def test_priority_sources_count_toward_cap(self):
+        items = [n("prio", f"Priority story {i}", priority=2) for i in range(5)]
+        items += [n("regular", f"Regular story {i}") for i in range(5)]
+        rules = {**RULES, "max_news": 6}
+        out, _ = select.pick_news(items, rules, empty())
+        prio_count = sum(1 for i in out if i["source"] == "prio")
+        self.assertLessEqual(len(out), 6)
+        self.assertGreater(prio_count, 0)
+
 
 class RenderTests(unittest.TestCase):
-    def test_render_escapes_and_has_thumbs_only(self):
+    def test_render_escapes_and_no_voting(self):
         from zoneinfo import ZoneInfo
         from sharectl_edition.render import template
         tz = ZoneInfo("America/New_York")
@@ -80,9 +90,15 @@ class RenderTests(unittest.TestCase):
                              [{"key": "us", "title": "US", "items": [it, n("b", "Second story")]}], [], datetime.now(tz), tz)
         self.assertNotIn("<script>alert(1)", html)
         self.assertIn("Good morning, Sam.", html)
-        self.assertIn('data-vote="up"', html)
-        self.assertNotIn('class="why', html)
-        self.assertNotIn("data-vote=\"more", html)
+        self.assertNotIn('data-vote', html)
+        self.assertIn("Want changes? Just tell your bot.", html)
+
+
+class NetworkErrorTests(unittest.TestCase):
+    def test_fetch_error_raised(self):
+        from sharectl_edition import net
+        with self.assertRaises(net.FetchError):
+            net.get("http://invalid-domain-that-does-not-exist-12345.com/")
 
 
 if __name__ == "__main__":

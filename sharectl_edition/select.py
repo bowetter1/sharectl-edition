@@ -14,7 +14,7 @@ import re
 from . import feedback
 
 DEFAULT_POLITICAL = ["election", "senate", "congress", "republican", "democrat", "gop", "white house",
-                     "governor", "campaign", "ballot", "impeach", "partisan", "lawmakers", "trump", "biden", "harris"]
+                     "governor", "ballot", "impeach", "partisan", "lawmakers", "trump", "biden", "harris"]
 STOP = set("after before under between their there about would could should first years people".split())
 
 
@@ -24,16 +24,19 @@ def has(text: str, words: list[str]) -> bool:
 
 
 def _words(t: str) -> set[str]:
-    return {w[:6] for w in re.findall(r"[a-z0-9]{5,}", (t or "").lower()) if w not in STOP}
+    return {w for w in re.findall(r"[a-z0-9]{3,}", (t or "").lower()) if w not in STOP}
 
 
 def same_story(a: str, b: str) -> bool:
-    """Near-duplicate headline test: shared word stems (6 chars) across two headlines."""
+    """Near-duplicate headline test: token Jaccard similarity over normalized titles."""
     sa, sb = _words(a), _words(b)
     if not sa or not sb:
         return False
-    common = len(sa & sb)
-    return common >= 3 or (common >= 2 and common / min(len(sa), len(sb)) >= 0.5)
+    intersection = len(sa & sb)
+    union = len(sa | sb)
+    jaccard = intersection / union if union > 0 else 0
+    short_threshold = 0.75 if min(len(sa), len(sb)) <= 5 else 0.6
+    return jaccard >= short_threshold
 
 
 def classify(item: dict, sections: list[dict]) -> str:
@@ -92,7 +95,9 @@ def pick_news(items: list[dict], rules: dict, w: dict, avoid: list[str] = ()) ->
                 seen_titles.append(it["title"])
     prio = [it for src, lst in kept.items() for it in lst if lst and lst[0].get("priority")]
     rest = {s: l for s, l in kept.items() if not (l and l[0].get("priority"))}
-    out = prio + round_robin(rest, max(0, rules["max_news"]))
+    max_news_limit = rules["max_news"]
+    prio_limited = prio[:max_news_limit]
+    out = prio_limited + round_robin(rest, max(0, max_news_limit - len(prio_limited)))
     skipped["no room in the edition"] += sum(len(l) for l in kept.values()) - len(out)
     return out, skipped
 

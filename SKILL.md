@@ -58,43 +58,67 @@ path in `sources.x.timeline_file`, set `sources.x.enabled: true`, then build. Po
 
 Pick what fits the user and set `publish.target`:
 
-- `static` (default): the folder is the paper. Show it in chat, or upload it to any static host.
-- `cloudflare`: the user's own Cloudflare Pages project. Needs `CLOUDFLARE_API_TOKEN` (Account > Cloudflare Pages > Edit)
-  and `CLOUDFLARE_ACCOUNT_ID` in the environment, and `publish.project`. Ask the user to create the token; never ask for their password.
+- **`github` (recommended default)**: Pushes the built site to a `gh-pages` branch in the reader's own GitHub repository. The bot needs git push access (already configured if running in the repo). Set `publish.repo_url` (or leave empty to use the current repo's origin), and `publish.branch` (default: "gh-pages"). GitHub Pages must be enabled in the repo settings (Settings > Pages > Source: Deploy from a branch > gh-pages). The site will be live at `https://USERNAME.github.io/REPO-NAME/`.
+
+- `cloudflare`: The user's own Cloudflare Pages project. Needs `CLOUDFLARE_API_TOKEN` (Account > Cloudflare Pages > Edit) and `CLOUDFLARE_ACCOUNT_ID` in the environment, and `publish.project`. Ask the user to create the token; never ask for their password.
+
 - `sharectl`: POSTs the HTML to `publish.url` with `Authorization: Bearer $SHARECTL_TOKEN` if set.
+
+- `static`: The folder is the paper. Show it in chat, or upload it to any static host.
 
 ```bash
 python3 -m sharectl_edition publish --config config.json
 ```
 
-Ask before publishing anywhere public the first time. Send the user the link afterwards, with a two or three
-sentence summary of what stood out today. No "why I included this" notes on the page itself.
+**GitHub Pages first-time setup:**
+1. The bot runs `publish` which creates/updates the `gh-pages` branch automatically
+2. Tell the user to enable Pages: go to the repo on GitHub → Settings → Pages → Source: "Deploy from a branch" → Branch: `gh-pages` → Save
+3. The site will be live at `https://USERNAME.github.io/REPO-NAME/` in ~1 minute
+
+Ask before publishing anywhere public the first time. Send the user the link afterwards, with a two or three sentence summary of what stood out today. No "why I included this" notes on the page itself.
 
 ## 5. Daily routine
 
 Schedule a daily job (your platform's scheduler or cron) that starts about 30 minutes before the ready time:
 refresh the X timeline if enabled, import new feedback (step 6), run `publish`, check `report.json`, send the link.
 
-## 6. Learn from thumbs up / down
+## 6. Plain-language preferences (no voting UI)
 
-The page has only 👍 and 👎 on each item. Clicks are stored in the reader's browser; the "Export feedback" link in the
-footer downloads `feedback-YYYY-MM-DD.json`. When the user gives you that file:
+The page has no voting buttons. When the reader tells you what they want ("more AI", "less crypto", "hide Tesla", "more from Simon Willison"), you translate that into `feedback.json` weights or `config.json` rules:
 
-```bash
-python3 -m sharectl_edition feedback import feedback-2026-10-16.json --config config.json
-```
+**Translate reader requests into commands:**
 
-When the user reacts in chat instead ("less Tesla", "more from Simon Willison"), either edit the rules in
-`config.json` or record it directly:
+- **"more AI"** or **"boost AI topics"**: Add "ai" to `rules.boost_keywords` in config.json, or run:
+  ```bash
+  python3 -m sharectl_edition feedback mute ai -1.0 --config config.json
+  ```
 
-```bash
-python3 -m sharectl_edition feedback add ITEM_ID up SOURCE_ID --config config.json
-python3 -m sharectl_edition feedback hide SOURCE_OR_AUTHOR --config config.json
-python3 -m sharectl_edition feedback show --config config.json
-```
+- **"less crypto"** or **"mute crypto"**: Add "crypto" to `rules.mute_keywords`, or:
+  ```bash
+  python3 -m sharectl_edition feedback mute crypto -0.5 --config config.json
+  ```
 
-Weights boost or demote sources, authors, sections and headline keywords on the next build. Confirm each change
-to the user in one sentence, and rebuild today's edition if they ask.
+- **"more from Simon Willison"** or **"boost simonw"**:
+  ```bash
+  python3 -m sharectl_edition feedback boost simonw 1.0 --config config.json
+  ```
+
+- **"hide Tesla"** or **"never show Tesla stories"**: Add "tesla" to `rules.mute_keywords`, or:
+  ```bash
+  python3 -m sharectl_edition feedback mute tesla -2.0 --config config.json
+  ```
+
+- **"hide The Verge"** or **"unfollow verge"**:
+  ```bash
+  python3 -m sharectl_edition feedback hide verge --config config.json
+  ```
+
+- **"show my preferences"**:
+  ```bash
+  python3 -m sharectl_edition feedback show --config config.json
+  ```
+
+Weights adjust source, author, and keyword scores. Hidden sources/authors never appear. Confirm each change in one sentence, then rebuild today's edition if the user asks.
 
 ## House rules
 - Link out to the publisher. Headline, short summary, lead image and byline only.
