@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from sharectl_edition import cli, config, feedback, net
 from sharectl_edition.build import build, collect
+from sharectl_edition.publish import github
 
 
 class EditorTests(unittest.TestCase):
@@ -138,6 +139,20 @@ class EditorTests(unittest.TestCase):
                                 capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual((out / 'index.html').read_text(), 'Previous edition')
+
+    def test_github_publish_requires_the_readers_own_repository(self):
+        cfg = self.root / 'config.json'
+        self.cfg['publish'] = {'target': 'github'}
+        cfg.write_text(json.dumps(self.cfg))
+        self.selection_path.write_text(json.dumps(self.selection))
+        out = self.root / 'site'
+        with patch('subprocess.run', side_effect=AssertionError('must not fall back to the checkout origin')):
+            with self.assertRaisesRegex(ValueError, 'repo_url'):
+                cli.main(['publish', '--config', str(cfg), '--items', str(self.items),
+                          '--selection', str(self.selection_path), '--out', str(out)])
+            out.mkdir()
+            self.assertEqual(github.deploy(str(out), None), 1)
+        self.assertEqual(list(out.iterdir()), [])
 
     def test_malformed_feedback_is_not_silently_discarded(self):
         (self.root / 'saved-feedback.json').write_text('{broken')

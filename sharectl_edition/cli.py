@@ -79,6 +79,11 @@ def main(argv=None):
 
     from .publish import static
 
+    target = cfg["publish"].get("target", "static")
+    if a.cmd == "publish" and target == "github" and not cfg["publish"].get("repo_url"):
+        from .publish import github
+        raise ValueError(github.MISSING_REPO)
+
     out = a.out or os.path.join(base, cfg["publish"].get("out", "site"))
     html_text, report = build(cfg, base, a.items, a.selection)
     date = report["date"][:10]
@@ -88,7 +93,6 @@ def main(argv=None):
     print(f"wrote {path}  {report['counts']}")
 
     if a.cmd == "publish":
-        target = cfg["publish"].get("target", "static")
         if target == "github":
             from .publish import github
             repo = cfg["publish"].get("repo_url")

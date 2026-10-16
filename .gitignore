@@ -3,5 +3,7 @@ __pycache__/
 /config.json
 /feedback.json
 /x-timeline.json
+/candidates.json
+/selection.json
 /site/
 .env

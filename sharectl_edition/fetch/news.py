@@ -48,7 +48,8 @@ def _date(s: str) -> str:
 def parse_feed(xml: str) -> list[dict]:
     """RSS 2.0 or Atom -> [{title, link, desc, image, published, author}]."""
     try:
-        root = ET.fromstring(xml.encode("utf-8"))
+        # Parse the decoded text as is: re-encoding it as UTF-8 would contradict a feed that declares ISO-8859-1.
+        root = ET.fromstring(xml)
     except Exception:
         return []
     out = []
@@ -75,12 +76,16 @@ def parse_feed(xml: str) -> list[dict]:
     return out
 
 
+# An attribute value ends at its own quote, so "Trump's plan" and 'He said "no"' stay whole.
+_VALUE = r'''(?:"([^"]*)"|'([^']*)')'''
+
+
 def _meta(h: str, prop: str) -> str:
-    for pat in (rf'<meta[^>]+(?:property|name)=["\']{prop}["\'][^>]+content=["\']([^"\']*)',
-                rf'<meta[^>]+content=["\']([^"\']*)["\'][^>]+(?:property|name)=["\']{prop}["\']'):
+    for pat in (rf'<meta[^>]+(?:property|name)=["\']{prop}["\'][^>]+content={_VALUE}',
+                rf'<meta[^>]+content={_VALUE}[^>]+(?:property|name)=["\']{prop}["\']'):
         m = re.search(pat, h, re.I)
         if m:
-            return html.unescape(m.group(1)).strip()
+            return html.unescape(m.group(1) or m.group(2) or "").strip()
     return ""
 
 

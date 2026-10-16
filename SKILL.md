@@ -114,4 +114,4 @@ Link to the publisher for the full story. Keep only headlines, short summaries, 
 
 Public publishing and daily scheduling follow the reader’s opt-in after the first edition (or an earlier explicit request). Confirm completion only after the relevant tool succeeds; offering these options is not permission to activate them. The first local paper needs neither.
 
-For an authorized publication, use `publish` instead of `build` with the same `--items` and `--selection` arguments. Existing configs and feedback files need no migration. Old one-step build commands and schedules must adopt the three-step workflow.
+For an authorized publication, use `publish` instead of `build` with the same `--items` and `--selection` arguments. For GitHub Pages, set `publish.target: "github"` and `publish.repo_url` to the reader's own repository; this checkout's origin is never used. Existing configs and feedback files need no migration. Old one-step build commands and schedules must adopt the three-step workflow.
