@@ -27,13 +27,13 @@ Your agent follows [`SKILL.md`](SKILL.md) to:
 >
 > **Your AI:** What should I call you? What topics and sources do you enjoy, and what should I leave out? Would you like weather or YouTube videos?
 >
-> **You:** Call me Alex. Mostly AI and technology, especially Simon Willison and Ars Technica. Very little politics.
+> **You:** Call me Alex. I’ll tell you which topics and sources I want to follow.
 >
 > **Your AI:** I'll save those preferences and build your first edition.
 
 Then, after reading:
 
-> **You:** More AI, less crypto, and no more than two stories from The Verge. Rebuild today's paper.
+> **You:** I’d like to change my sources and topic preferences. Rebuild today’s paper with the updated settings.
 >
 > **Your AI:** I'll update your preferences and rebuild it with those rules.
 
@@ -65,7 +65,7 @@ Python 3.10+, standard library only.
 - **Video**: new uploads from your YouTube channels, on a black page with round red play buttons.
 - **Why?**: at the end, which sources were in today's paper and what the rules left out, then a closing line. The paper ends.
 - **Your language**: every word the page itself says comes from one table of strings. English and Swedish are built in; for any other language your agent translates the table into `config.json`.
-- **Plain-language feedback**: Tell your agent what you want more or less of ("more AI", "less politics", "hide Tesla"), and it adjusts the paper.
+- **Plain-language feedback**: Tell your agent how you want to change your sources or coverage, and it saves your personal preferences.
 
 ## How selection works
 
