@@ -6,8 +6,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from sharectl_edition import config, feedback, select
-from sharectl_edition.build import build
+from sharectl_edition import config, feedback
+from sharectl_edition.build import collect
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,29 +27,6 @@ class NeutralDefaultsTests(unittest.TestCase):
                 self.assertEqual(cfg['publish']['target'], 'static')
                 self.assertEqual(cfg['timezone'], 'UTC')
 
-    def test_politics_is_allowed_unless_reader_sets_a_news_cap(self):
-        items = [dict(id=str(i), kind='news', source=str(i), title=title, text='')
-                 for i, title in enumerate(['Senate approves budget', 'Election results announced',
-                                           'Governor visits coastal village'])]
-        rules = copy.deepcopy(config.DEFAULTS['rules'])
-        weights = copy.deepcopy(feedback.EMPTY)
-        for limit, expected in [(None, 3), (0, 0), (1, 1)]:
-            rules['max_political'] = limit
-            kept, _ = select.pick_news(items, rules, weights)
-            self.assertEqual(len(kept), expected)
-        del rules['max_political']
-        self.assertEqual(len(select.pick_news(items, rules, weights)[0]), 3)
-
-    def test_video_topic_filter_requires_explicit_keywords(self):
-        now = datetime.now(timezone.utc)
-        video = dict(id='v', kind='video', source='channel', title='Election results explained',
-                     published=now.isoformat())
-        rules = copy.deepcopy(config.DEFAULTS['rules'])
-        weights = copy.deepcopy(feedback.EMPTY)
-        self.assertEqual(len(select.pick_videos([video], rules, weights, now)), 1)
-        rules['mute_keywords'] = ['election']
-        self.assertEqual(select.pick_videos([video], rules, weights, now), [])
-
     def test_existing_reader_preferences_are_preserved(self):
         chosen = {'timezone': 'Europe/Stockholm', 'name': 'Test reader',
                   'rules': {'max_political': 0, 'boost_keywords': ['gardening']}}
@@ -61,10 +38,9 @@ class NeutralDefaultsTests(unittest.TestCase):
         self.assertEqual(cfg['rules']['boost_keywords'], ['gardening'])
         self.assertEqual(cfg['timezone'], chosen['timezone'])
 
-    def test_empty_starter_builds_without_external_sources(self):
+    def test_empty_starter_fetches_without_external_sources(self):
         cfg = config.load(str(ROOT / 'config.example.json'))
         with tempfile.TemporaryDirectory() as tmp:
-            html, report = build(cfg, tmp)
-        self.assertEqual(report['counts'], {'news': 0, 'posts': 0, 'videos': 0})
-        self.assertNotIn('politics capped', html)
-        self.assertNotIn('New York', html)
+            packet = collect(cfg, tmp)
+        self.assertEqual(packet['items'], [])
+        self.assertEqual(packet['reader']['rules']['boost_keywords'], [])

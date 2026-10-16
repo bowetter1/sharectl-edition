@@ -1,3 +1,9 @@
+import sys
+
 from .cli import main
 
-main()
+try:
+    sys.exit(main())
+except (ValueError, OSError) as exc:
+    print(f"Error: {exc}", file=sys.stderr)
+    sys.exit(1)

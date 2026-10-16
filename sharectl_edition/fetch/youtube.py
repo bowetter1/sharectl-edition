@@ -71,13 +71,10 @@ def fetch_channel(ch: dict) -> tuple[dict, list[dict]]:
     if root is not None:
         name = root.findtext("a:title", "", NS) or name
         for k, en in enumerate(root.findall("a:entry", NS)):
-            link = en.find("a:link", NS)
-            if link is not None and "/shorts/" in link.get("href", ""):
-                continue
             g = en.find("m:group", NS)
             desc = (g.findtext("m:description", "", NS) if g is not None else "").strip()
             desc = re.sub(r"https?://\S+", "", desc.split("\n\n")[0])[:240].strip()
-            pub = datetime.fromisoformat(en.findtext("a:published", "", NS))
+            pub = datetime.fromisoformat(en.findtext("a:published", "", NS).replace("Z", "+00:00"))
             items.append(_item(handle, name, avatar, en.findtext("yt:videoId", "", NS), en.findtext("a:title", "", NS),
                                desc, pub, k, section))
     else:

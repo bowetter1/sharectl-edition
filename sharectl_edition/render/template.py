@@ -150,7 +150,7 @@ def weather_block(w, headline=None):
     r = w["rain"]
     rain = EN["no_rain"] if r < 10 else EN["some_rain"].format(p=r) if r < 40 else EN["rain"].format(p=r)
     sub = EN["weather_sub"].format(hi=deg(w["hi"]), lo=deg(w["lo"]), wind=round(w["wind"]), unit=w["wind_unit"], rain=rain)
-    cells = "".join(f'<li{" class=\"now\"" if i == 0 else ""}><span>{EN["now"] if i == 0 else h["time"]}</span>'
+    cells = "".join(f'<li class="{"now" if i == 0 else ""}"><span>{EN["now"] if i == 0 else h["time"]}</span>'
                     f'{icon(h["sym"])}<b>{deg(h["temp"])}</b></li>' for i, h in enumerate(w["strip"]))
     t = w["tomorrow"]
     cells += f'<li class="tmrw"><span>{EN["tomorrow"]}</span>{icon(t["sym"])}<b>{deg(t["hi"])}</b><small>{deg(t["lo"])}</small></li>'
@@ -267,7 +267,7 @@ def why_block(cfg, report, every):
     stats = report.get("sources") or {}
     read = sum(s.get("read", 0) + s.get("videos", 0) + s.get("posts", 0) for s in stats.values())
     kept = sum((report.get("counts") or {}).values()) or len(every)
-    intro = EN["why_intro"].format(read=read or "–", n=len(stats) or len({it["source"] for it in every}), kept=kept,
+    intro = EN["why_ai_intro" if report.get("editor") == "ai" else "why_intro"].format(read=read or "–", n=len(stats) or len({it["source"] for it in every}), kept=kept,
                                    per_source=rules.get("max_per_source", "–"), political=rules.get("max_political", "–"))
     skipped = report.get("skipped") or {}
     reasons = "".join(f'<li><b>{n}</b> {e(EN["skip_reasons"].get(k, k))}</li>' for k, n in skipped.items() if n)
@@ -279,7 +279,7 @@ def why_block(cfg, report, every):
             + f'</div></section><p class="w the-end">{EN["the_end"]}</p>')
 
 
-def page(cfg, sections, morning, now, tz, report=None):
+def page(cfg, sections, morning, now, tz, report=None, lead_id=None):
     set_language(cfg.get("language"), cfg.get("strings"))
     with open(os.path.join(HERE, "edition.css"), encoding="utf-8") as f:
         css = f.read()
@@ -290,6 +290,8 @@ def page(cfg, sections, morning, now, tz, report=None):
     every = [it for s in sections for it in s["items"]]
     news_like = [it for it in every if it["kind"] != "video"]
     lead = next((it for it in news_like if it.get("image") and it["kind"] == "news"), news_like[0] if news_like else None)
+    if lead_id is not None:
+        lead = next(it for it in news_like if it["id"] == lead_id)
     if lead:
         for s in sections:
             if lead in s["items"]:

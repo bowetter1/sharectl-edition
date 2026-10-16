@@ -1,6 +1,7 @@
 """Command line:
-  python -m sharectl_edition build    --config config.json --out site/
-  python -m sharectl_edition publish  --config config.json --out site/
+  python -m sharectl_edition fetch    --config config.json --out candidates.json
+  python -m sharectl_edition build --config config.json --items candidates.json --selection selection.json --out site/
+  python -m sharectl_edition publish --config config.json --items candidates.json --selection selection.json --out site/
   python -m sharectl_edition feedback show --config config.json
   python -m sharectl_edition strings  --lang en     # the UI strings as JSON, for translating into the reader's language
 """
@@ -16,12 +17,16 @@ from . import feedback
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="sharectl_edition")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    fetch = sub.add_parser("fetch", help="collect candidates and saved preferences for the AI editor")
+    fetch.add_argument("--config", default="config.json")
+    fetch.add_argument("--out", required=True, help="private candidate JSON, outside the published folder")
+    fetch.add_argument("--from-items", help="import raw offline items, such as the fictional demo")
     for name in ("build", "publish"):
         p = sub.add_parser(name)
         p.add_argument("--config", default="config.json")
         p.add_argument("--out", default=None)
-        p.add_argument("--from-items", default=None, help="re-render from a saved items.json (no network)")
-        p.add_argument("--save-items", default=None, help="save fetched items to this JSON file")
+        p.add_argument("--items", required=True, help="candidate JSON from fetch")
+        p.add_argument("--selection", required=True, help="AI selection JSON")
     f = sub.add_parser("feedback")
     f.add_argument("action", choices=["show", "boost", "mute", "hide"])
     f.add_argument("arg", nargs="*", help="boost/mute: IDENTIFIER AMOUNT | hide: IDENTIFIER")
@@ -64,15 +69,18 @@ def main(argv=None):
         print(json.dumps(w, indent=1, ensure_ascii=False))
         return
 
-    from .build import build
+    from .build import build, collect
+    if a.cmd == "fetch":
+        packet = collect(cfg, base, a.from_items)
+        with open(a.out, "w", encoding="utf-8") as fh:
+            json.dump(packet, fh, ensure_ascii=False, indent=2)
+        print(f"wrote {a.out}: {len(packet['items'])} candidates; AI selection required")
+        return 0 if packet['items'] else 1
+
     from .publish import static
 
     out = a.out or os.path.join(base, cfg["publish"].get("out", "site"))
-    html_text, report = build(cfg, base, a.from_items)
-    if a.save_items and "raw" in report:
-        with open(a.save_items, "w", encoding="utf-8") as fh:
-            json.dump(report["raw"], fh, ensure_ascii=False, indent=1)
-    report.pop("raw", None)
+    html_text, report = build(cfg, base, a.items, a.selection)
     date = report["date"][:10]
     path = static.write(html_text, out, date)
     with open(os.path.join(out, "report.json"), "w", encoding="utf-8") as fh:

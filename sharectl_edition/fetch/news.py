@@ -158,7 +158,7 @@ def fetch_source(src: dict, candidates: int = 8) -> tuple[dict, list[dict]]:
                 break
         except net.FetchError as e:
             error = str(e)
-    arts = [a for a in arts if a["link"] and a["title"] and "/live" not in a["link"]][:candidates]
+    arts = [a for a in arts if a["link"] and a["title"]][:candidates]
     stats = {"name": src["name"], "ok": bool(arts), "feed": used or urls[0], "read": len(arts)}
     if error and not arts:
         stats["error"] = error
