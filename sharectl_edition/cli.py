@@ -62,7 +62,7 @@ def main(argv=None):
 
     from .build import CandidateError, collect
     if a.cmd == "fetch":
-        packet = collect(cfg)
+        packet = collect(cfg, base)
         with open(a.out, "w", encoding="utf-8") as fh:
             json.dump(packet, fh, ensure_ascii=False, indent=2)
         print(f"wrote {a.out}: {len(packet['items'])} candidates")

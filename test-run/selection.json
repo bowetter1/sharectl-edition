@@ -1,0 +1,50 @@
+{
+  "batch_id": "7d2cf7bfe9a8731351fac319d8337ac95b22767cf01f494eea1f8b34d2ad8302",
+  "lead_id": "verge-6e00068821",
+  "items": [
+    {
+      "id": "verge-6e00068821",
+      "section": "tech"
+    },
+    {
+      "id": "verge-41d2a43ff6",
+      "section": "tech"
+    },
+    {
+      "id": "verge-09b153c076",
+      "section": "tech"
+    },
+    {
+      "id": "hn-7e080edd95",
+      "section": "tech"
+    },
+    {
+      "id": "hn-092fa14258",
+      "section": "tech"
+    },
+    {
+      "id": "hn-34bf133078",
+      "section": "tech"
+    },
+    {
+      "id": "simonw-08c7976423",
+      "section": "tech"
+    },
+    {
+      "id": "simonw-6702d1aaf0",
+      "section": "tech"
+    },
+    {
+      "id": "simonw-bbc1e25e9e",
+      "section": "tech"
+    },
+    {
+      "id": "arstechnica-05651cde62",
+      "section": "tech"
+    },
+    {
+      "id": "espn-4769ca24af",
+      "section": "sports"
+    }
+  ]
+}

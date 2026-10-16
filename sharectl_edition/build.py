@@ -33,7 +33,7 @@ def batch_id(packet):
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-def collect(cfg):
+def collect(cfg, base_dir='.'):
     """Fetch RSS feeds, return candidates with reader preferences."""
     sources, articles = news.run(cfg['sources']['rss'])
     
@@ -44,7 +44,7 @@ def collect(cfg):
     packet = {
         'version': 1,
         'date': datetime.now(ZoneInfo(cfg['timezone'])).isoformat(),
-        'reader': reader_settings(cfg, '.'),
+        'reader': reader_settings(cfg, base_dir),
         'sources': sources,
         'items': articles
     }

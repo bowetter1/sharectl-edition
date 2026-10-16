@@ -1,0 +1,53 @@
+{
+ "date": "2026-10-16T06:20:59.480334-04:00",
+ "batch_id": "7d2cf7bfe9a8731351fac319d8337ac95b22767cf01f494eea1f8b34d2ad8302",
+ "sources": {
+  "verge": {
+   "name": "The Verge",
+   "ok": true,
+   "feed": "https://www.theverge.com/rss/index.xml",
+   "read": 8
+  },
+  "hn": {
+   "name": "Hacker News",
+   "ok": true,
+   "feed": "https://news.ycombinator.com/rss",
+   "read": 8
+  },
+  "simonw": {
+   "name": "Simon Willison",
+   "ok": true,
+   "feed": "https://simonwillison.net/atom/everything/",
+   "read": 8
+  },
+  "arstechnica": {
+   "name": "Ars Technica",
+   "ok": true,
+   "feed": "https://feeds.arstechnica.com/arstechnica/index",
+   "read": 8
+  },
+  "espn": {
+   "name": "ESPN NBA",
+   "ok": true,
+   "feed": "https://www.espn.com/espn/rss/nba/news",
+   "read": 8
+  }
+ },
+ "counts": {
+  "news": 11
+ },
+ "selected_ids": [
+  "verge-6e00068821",
+  "verge-41d2a43ff6",
+  "verge-09b153c076",
+  "hn-7e080edd95",
+  "hn-092fa14258",
+  "hn-34bf133078",
+  "simonw-08c7976423",
+  "simonw-6702d1aaf0",
+  "simonw-bbc1e25e9e",
+  "arstechnica-05651cde62",
+  "espn-4769ca24af"
+ ],
+ "lead_id": "verge-6e00068821"
+}
