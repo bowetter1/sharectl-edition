@@ -3,6 +3,7 @@
   "greeting": "Good morning, {name}.",
   "timezone": "America/New_York",
   "language": "en",
+  "strings": {},
 
   "sources": {
     "rss": [

@@ -1,8 +1,8 @@
 """Command line:
   python -m sharectl_edition build    --config config.json --out site/
   python -m sharectl_edition publish  --config config.json --out site/
-  python -m sharectl_edition feedback import feedback-2026-10-16.json --config config.json
   python -m sharectl_edition feedback show --config config.json
+  python -m sharectl_edition strings  --lang en     # the UI strings as JSON, for translating into the reader's language
 """
 import argparse
 import json
@@ -26,7 +26,14 @@ def main(argv=None):
     f.add_argument("action", choices=["show", "boost", "mute", "hide"])
     f.add_argument("arg", nargs="*", help="boost/mute: IDENTIFIER AMOUNT | hide: IDENTIFIER")
     f.add_argument("--config", default="config.json")
+    s = sub.add_parser("strings", help="print the UI strings for a language as JSON (translate, then put under 'strings' in config.json)")
+    s.add_argument("--lang", default="en")
     a = ap.parse_args(argv)
+
+    if a.cmd == "strings":
+        from .render import labels
+        print(json.dumps(labels.get(a.lang), indent=1, ensure_ascii=False))
+        return
 
     cfg = cfgmod.load(a.config)
     base = os.path.dirname(os.path.abspath(a.config))

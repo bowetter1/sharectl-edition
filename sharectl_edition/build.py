@@ -46,9 +46,10 @@ def build(cfg: dict, base_dir: str = ".", offline_items: str | None = None) -> t
     report["skipped"] = dict(skipped)
     report["counts"] = {"news": len(picked), "posts": len(posts), "videos": len(vids)}
 
+    template.set_language(cfg.get("language"), cfg.get("strings"))
     morning = []
     if wx:
-        morning.append(template.weather_block(wx, weather.headline(wx)))
+        morning.append(template.weather_block(wx))
     if mk:
-        morning.append(template.markets_block(mk, (cfg["modules"]["markets"] or {}).get("title", "Markets"), markets.headline(mk)))
-    return template.page(cfg, sections, morning, now, tz), report
+        morning.append(template.markets_block(mk, (cfg["modules"]["markets"] or {}).get("title")))
+    return template.page(cfg, sections, morning, now, tz, report), report

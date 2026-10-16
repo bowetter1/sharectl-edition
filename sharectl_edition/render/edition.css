@@ -30,13 +30,16 @@ html:has(.paper) { scroll-padding-top: 64px; scroll-behavior: smooth; }
 .pill { display: flex; align-items: center; gap: 8px; padding: 15px 12px 14px; color: #d2d2d7; font: 600 14px/1 var(--sans); white-space: nowrap; box-shadow: inset 0 -3px 0 transparent; }
 .pill:hover { color: #fff; text-decoration: none; box-shadow: inset 0 -3px 0 #3a3a3c; }
 .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--s) 62%, #fff); }
+.pill.plain::before, .pill.why-link::before { display: none; }
+.pill.why-link { margin-left: auto; color: #ff6b6b; }
+.pill.why-link:hover { color: #ff8a8a; box-shadow: inset 0 -3px 0 #ff6b6b; }
 
-/* Images: cropped square like print. The lead image is shown whole, with a blurred copy around it. */
-.pic { position: relative; display: block; overflow: hidden; aspect-ratio: 3 / 2; background: #eee; }
+/* Images: cropped, with the soft corners the rest of sharectl uses. The lead image is shown whole, with a blurred copy around it. */
+.pic { position: relative; display: block; overflow: hidden; aspect-ratio: 3 / 2; border-radius: 10px; background: #eee; }
 .pic img { width: 100%; height: 100%; object-fit: cover; }
-.pic.whole { display: grid; place-items: center; aspect-ratio: auto; isolation: isolate; }
+.pic.whole { display: grid; place-items: center; aspect-ratio: auto; isolation: isolate; border-radius: 12px; }
 .pic.whole::before { content: ""; position: absolute; inset: -40px; z-index: -1; background: var(--img) center / cover; filter: blur(30px) saturate(1.3); opacity: .55; transform: scale(1.1); }
-.pic.whole img { width: auto; height: auto; max-height: 560px; object-fit: contain; }
+.pic.whole img { width: auto; height: auto; max-height: 420px; object-fit: contain; }
 
 /* Headlines and text */
 .hed { font-family: var(--serif); font-weight: 700; letter-spacing: -.012em; text-wrap: pretty; }
@@ -55,18 +58,11 @@ html:has(.paper) { scroll-padding-top: 64px; scroll-behavior: smooth; }
 .av.logo { background: #fff; }
 .av.logo img { width: 70%; height: 70%; object-fit: contain; }
 
-/* Thumbs: the only feedback. No "more/less" buttons, no "why" notes. */
-.fb { display: flex; gap: 6px; padding-top: 4px; }
-.fb button { width: 30px; height: 30px; border: 1px solid var(--rule); border-radius: 50%; background: #fff; font-size: 13px; cursor: pointer; }
-.fb button[aria-pressed=true] { background: var(--ink); border-color: var(--ink); }
-@media (hover: hover) {
-  .it .fb button { opacity: .45; transition: opacity .2s; }
-  .it:hover .fb button, .fb button[aria-pressed=true], .fb:focus-within button { opacity: 1; }
-}
+/* No buttons on the page. The reader changes the paper by talking to their agent. */
 
 /* Morning modules: weather and markets */
 .morning { display: grid; gap: 12px; margin-top: 28px; }
-.mod { --accent: var(--ink); --panel: #f4f5f7; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--gut); align-items: center; padding: 26px 30px; border-radius: 6px; background: var(--panel); }
+.mod { --accent: var(--ink); --panel: #f4f5f7; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--gut); align-items: center; padding: 26px 30px; border-radius: 14px; background: var(--panel); }
 .mod .kicker { color: var(--accent); }
 .mod-text { display: flex; flex-direction: column; gap: 8px; }
 .mod-hed { font-family: var(--serif); font-size: clamp(22px, 2.3vw, 29px); line-height: 1.14; font-weight: 700; }
@@ -107,7 +103,7 @@ html:has(.paper) { scroll-padding-top: 64px; scroll-behavior: smooth; }
 .spark .base { stroke: #b5b5b5; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; }
 
 /* Front page: top story and the latest headlines */
-.front { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--gut); margin-top: 40px; padding-bottom: 40px; border-bottom: 1px solid var(--rule); }
+.front { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--gut); align-items: start; margin-top: 36px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
 .f-art { display: flex; flex-direction: column; gap: 14px; }
 .f-art .dek { font-size: 19px; }
 .f-side { padding-left: var(--gut); border-left: 1px solid var(--rule); }
@@ -120,30 +116,31 @@ html:has(.paper) { scroll-padding-top: 64px; scroll-behavior: smooth; }
 .latest .sec { margin-right: 6px; font-weight: 700; color: var(--s, var(--ink)); }
 
 /* Sections */
-.desk { margin-top: 64px; }
+.desk { margin-top: 44px; }
 .d-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 24px; padding-top: 12px; border-top: 4px solid var(--s, var(--ink)); }
 .d-head h2 { font-family: var(--serif); font-size: 32px; line-height: 1.1; font-weight: 700; color: var(--s, var(--ink)); }
 .d-head p { font-size: 15px; color: var(--mute); }
 .desk .hed a:hover { color: var(--s); text-decoration: none; }
-.top { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--gut); padding-bottom: 32px; border-bottom: 1px solid var(--rule); }
+.top { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--gut); align-items: start; padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
 .lead { display: flex; flex-direction: column; gap: 14px; }
 .t-side { display: flex; flex-direction: column; padding-left: var(--gut); border-left: 1px solid var(--rule); }
 .small-art { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
 .small-art:first-child { padding-top: 0; }
-.small-art:last-child { border-bottom: 0; }
+.small-art:last-child { border-bottom: 0; padding-bottom: 0; }
 .small-art .pic { aspect-ratio: 16 / 9; }
+/* Only the first side story carries a picture, so the column ends about where the big story does. */
+.t-side .small-art:not(:first-child) .pic { display: none; }
 
 /* Voices from X: the person, and what they wrote */
-.voices { margin-top: 28px; padding: 26px 30px 10px; border-radius: 6px; background: color-mix(in srgb, var(--s, #888) 7%, #fff); }
+.voices { margin-top: 28px; padding: 26px 30px 10px; border-radius: 14px; background: color-mix(in srgb, var(--s, #888) 7%, #fff); }
 .v-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--gut); margin-top: 14px; }
 .voice { display: flex; flex-direction: column; gap: 12px; padding: 20px 0; border-top: 1px solid color-mix(in srgb, var(--s, #888) 22%, #fff); }
 .voice .av { width: 44px; height: 44px; font-size: 14px; }
 .voice .quote { font-family: var(--serif); font-size: 20px; line-height: 1.42; font-style: italic; white-space: pre-line; }
 .voice .out { font-size: 13px; color: var(--mute); }
-.voice .fb { margin-top: auto; }
 
 /* Two columns and briefs */
-.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 28px 0; border-bottom: 1px solid var(--rule); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; padding: 28px 0; border-bottom: 1px solid var(--rule); }
 .col { display: flex; flex-direction: column; gap: 12px; }
 .two > .col:first-child { padding-right: var(--gut); }
 .two > .col + .col { padding-left: var(--gut); border-left: 1px solid var(--rule); }
@@ -160,16 +157,27 @@ section.videos .d-head h2 { color: color-mix(in srgb, var(--s, #fff) 70%, #fff);
 section.videos .d-head p, section.videos .by small { color: #a1a1a6; }
 section.videos .hed, section.videos .hed a { color: #fff; }
 section.videos .av { box-shadow: 0 0 0 2px #0b0b0b, 0 0 0 3.5px var(--c, #888); }
-section.videos .fb button { background: #1c1c1e; border-color: #2c2c2e; }
 .v-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px var(--gut); }
 .tile { display: flex; flex-direction: column; gap: 10px; }
-.yt { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
+.yt { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; background: #000; }
 .yt img { width: 100%; height: 100%; object-fit: cover; }
 .yt .play-btn { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; padding: 0; margin: -32px 0 0 -32px; border-radius: 50%; background: #e5484d; display: grid; place-items: center; box-shadow: 0 6px 24px rgba(0, 0, 0, .35); transition: transform .2s; }
 .yt .play-btn::after { content: ""; margin-left: 5px; border-style: solid; border-width: 12px 0 12px 20px; border-color: transparent transparent transparent #fff; }
 .yt:hover .play-btn { transform: scale(1.08); }
 
-.foot { margin: 64px auto 40px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--mute); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+/* The end: why these items, who was in today's paper, and a line that says the paper is over. */
+.why { margin-top: 56px; padding-top: 24px; border-top: 4px solid var(--ink); }
+.why h2 { font-family: var(--serif); font-size: 32px; line-height: 1.1; font-weight: 700; }
+.why-intro { max-width: 68ch; margin-top: 12px; font-size: 17px; line-height: 1.5; color: var(--mute); }
+.why-cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--gut); margin-top: 24px; }
+.src-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.src-list li { padding: 6px 12px; border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; font-weight: 600; }
+.skip-list { margin-top: 10px; font-size: 14px; color: var(--mute); }
+.skip-list li { padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.skip-list b { display: inline-block; min-width: 2.2em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.the-end { margin: 64px auto 0; font-family: var(--serif); font-size: clamp(24px, 3vw, 36px); line-height: 1.2; font-weight: 700; text-align: center; letter-spacing: -.015em; }
+
+.foot { margin: 40px auto 40px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--mute); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .foot a { text-decoration: underline; }
 
 @media (max-width: 860px) {
@@ -186,7 +194,9 @@ section.videos .fb button { background: #1c1c1e; border-color: #2c2c2e; }
   .desk { margin-top: 48px; }
   .d-head { flex-direction: column; }
   .d-head h2 { font-size: 28px; }
-  .v-grid, .two, .v-tiles { grid-template-columns: minmax(0, 1fr); }
+  .v-grid, .two, .v-tiles, .why-cols { grid-template-columns: minmax(0, 1fr); }
+  .why h2 { font-size: 28px; }
+  .pill.why-link { margin-left: 8px; }
   .two > .col:first-child { padding-right: 0; }
   .two > .col + .col { margin-top: 24px; padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--rule); }
   .brief { grid-template-columns: minmax(0, 1fr) 96px; gap: 14px; }

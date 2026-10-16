@@ -6,11 +6,28 @@ import re
 from datetime import datetime
 from urllib.parse import urlsplit
 
-from .labels import EN
+from . import labels
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PALETTE = ["#5b3fd1", "#0b6bb3", "#0e7469", "#157a3d", "#a35f00", "#c2410c", "#b4235a", "#1b4f9c"]
+FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
+           "%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' "
+           "font-weight='700' font-size='22' fill='%23fff' text-anchor='middle'%3Es%3C/text%3E%3C/svg%3E")
 e = html.escape
+
+EN = labels.EN  # the strings in use; `set_language` swaps them before a render
+
+
+def set_language(lang: str | None, overrides: dict | None = None) -> dict:
+    """Pick the UI strings for this edition (built-in language plus the reader's `strings` from config).
+    Call before building the morning blocks and the page."""
+    global EN
+    EN = labels.get(lang, overrides)
+    return EN
+
+
+def fmt_date(now) -> str:
+    return EN["date"].format(day=EN["days"][now.weekday()], month=EN["months"][now.month - 1], d=now.day, y=now.year)
 
 
 def esc_attr(s: str) -> str:
@@ -106,7 +123,29 @@ def icon(sym):
     return f'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">{ICONS.get(sym, ICONS["cloud"])}</svg>'
 
 
-def weather_block(w, headline):
+def weather_headline(w) -> str:
+    word = EN["wx_words"].get(w["sym"], w["sym"])
+    key = "wx_hed" if w.get("place") else "wx_hed_noplace"
+    return EN[key].format(word=word, hi=round(w["hi"]), place=w.get("place", ""))
+
+
+def num(x: float, digits: int = 2, sign: bool = False) -> str:
+    """A number the way the reader writes it: 1,234.56 in English, 1 234,56 in Swedish (from the strings table)."""
+    s = f"{x:+,.{digits}f}" if sign else f"{x:,.{digits}f}"
+    return s.replace(",", "\0").replace(".", EN["decimal"]).replace("\0", EN["thousands"])
+
+
+def pct(x: float, digits: int = 1, sign: bool = False) -> str:
+    return EN["percent"].format(n=num(x, digits, sign))
+
+
+def markets_headline(ms) -> str:
+    best = max(ms, key=lambda m: abs(m["change"]))
+    return EN["mk_rose" if best["change"] > 0 else "mk_fell"].format(label=best["label"], pct=num(abs(best["change"]), 1))
+
+
+def weather_block(w, headline=None):
+    headline = headline or weather_headline(w)
     deg = lambda x: f"{round(x)}°"
     r = w["rain"]
     rain = EN["no_rain"] if r < 10 else EN["some_rain"].format(p=r) if r < 40 else EN["rain"].format(p=r)
@@ -131,12 +170,15 @@ def spark(values, prev):
             f'<line class="base" x1="0" x2="100" y1="{y(prev):.1f}" y2="{y(prev):.1f}"/><polyline points="{pts}"/></svg>')
 
 
-def markets_block(ms, title, headline):
+def markets_block(ms, title=None, headline=None):
+    title = title or EN["markets"]
+    headline = headline or markets_headline(ms)
     up = sum(m["change"] > 0 for m in ms)
     mood = "up" if up * 2 > len(ms) else "down"
     cells = "".join(f'<li class="{"up" if m["change"] > 0 else "down"}"><span class="lbl">{e(m["label"])}</span>'
-                    f'<span class="chg">{m["change"]:+.2f}%</span><span class="nm">{e(m["name"])}</span>'
-                    f'<span class="val">{m["price"]:,.2f}</span>{spark(m["spark"], m["prev"])}</li>' for m in ms)
+                    f'<span class="chg">{pct(m["change"], 2, sign=True)}</span>'
+                    f'<span class="nm">{e(m["name"])}</span>'
+                    f'<span class="val">{num(m["price"])}</span>{spark(m["spark"], m["prev"])}</li>' for m in ms)
     return (f'<div class="mod markets {mood}"><div class="mod-text"><p class="kicker">{e(title)}</p>'
             f'<h2 class="mod-hed">{e(headline)}</h2><p class="mod-sub">{EN["markets_sub_up"].format(up=up, n=len(ms))}</p>'
             f'<p class="mod-src">Yahoo Finance</p></div><div class="mod-data"><ul class="idx">{cells}</ul></div></div>')
@@ -149,7 +191,7 @@ def front(lead, items, tz):
                f'{hed(lead, "giant").replace("<h3", "<h2").replace("</h3>", "</h2>")}{dek(lead)}{byline(lead)}{thumbs(lead)}')
     dated = sorted(((when(it, tz), it) for it in items if it is not lead), key=lambda x: x[0] or datetime.min.replace(tzinfo=tz), reverse=True)
     rows = "".join(
-        f'<li style="--s:{it["sec_color"]}"><time>{t:%-I:%M %p}</time><a href="{esc_attr(it["url"])}">'
+        f'<li style="--s:{it["sec_color"]}"><time>{t.strftime(EN["time"])}</time><a href="{esc_attr(it["url"])}">'
         f'{e(short(it.get("title") or it["text"], 90))}</a><small><span class="sec">{e(it["sec_title"])}</span>'
         f'{e(it.get("author") or it["source_name"])}</small></li>' for t, it in dated[:7] if t)
     return (f'<section class="w front" id="top"><div class="f-main">{main}</div>'
@@ -217,7 +259,28 @@ def desk(sec):
 FEEDBACK_JS = ""
 
 
-def page(cfg, sections, morning, now, tz):
+def why_block(cfg, report, every):
+    """The end of the paper: which sources made it in, what the rules left out, and a line that says it's over.
+    `report` is the build report ({sources, skipped, counts}); it may be empty when rendering a fixture."""
+    report = report or {}
+    rules = cfg.get("rules") or {}
+    stats = report.get("sources") or {}
+    read = sum(s.get("read", 0) + s.get("videos", 0) + s.get("posts", 0) for s in stats.values())
+    kept = sum((report.get("counts") or {}).values()) or len(every)
+    intro = EN["why_intro"].format(read=read or "–", n=len(stats) or len({it["source"] for it in every}), kept=kept,
+                                   per_source=rules.get("max_per_source", "–"), political=rules.get("max_political", "–"))
+    skipped = report.get("skipped") or {}
+    reasons = "".join(f'<li><b>{n}</b> {e(EN["skip_reasons"].get(k, k))}</li>' for k, n in skipped.items() if n)
+    names = list(dict.fromkeys(it["source_name"] for it in every))
+    srcs = "".join(f"<li>{e(n)}</li>" for n in names)
+    return (f'<section class="w why" id="why"><h2>{EN["why_title"]}</h2><p class="why-intro">{e(intro)}</p>'
+            f'<div class="why-cols"><div><p class="kicker">{EN["sources_today"]}</p><ul class="src-list">{srcs}</ul></div>'
+            + (f'<div><p class="kicker">{EN["why_skipped"]}</p><ul class="skip-list">{reasons}</ul></div>' if reasons else "")
+            + f'</div></section><p class="w the-end">{EN["the_end"]}</p>')
+
+
+def page(cfg, sections, morning, now, tz, report=None):
+    set_language(cfg.get("language"), cfg.get("strings"))
     with open(os.path.join(HERE, "edition.css"), encoding="utf-8") as f:
         css = f.read()
     for s in sections:
@@ -233,15 +296,19 @@ def page(cfg, sections, morning, now, tz):
                 s["items"].remove(lead)
         sections = [s for s in sections if s["items"]]
     hello = cfg["greeting"].format(name=cfg["name"])
-    date = f"{now:%A, %B} {now.day}, {now.year}"
-    nav = "".join(f'<a class="pill" href="#{s["key"]}" style="--s:{s["color"]}">{e(s["title"])}</a>' for s in sections)
+    date = fmt_date(now)
+    nav = (f'<a class="pill plain" href="#top">{EN["top_story_nav"]}</a>' if lead else "") + "".join(
+        f'<a class="pill" href="#{s["key"]}" style="--s:{s["color"]}">{e(s["title"])}</a>' for s in sections)
+    nav += f'<a class="pill why-link" href="#why">{EN["why"]}</a>'
     body = (f'<header class="masthead"><div class="w m-row"><span>{date}</span><b>sharectl</b><span>{EN["tagline"]}</span></div>'
             f'<div class="w m-name"><a href="#top">{e(hello)}</a></div></header>'
             f'<nav class="nav"><div class="w nav-in">{nav}</div></nav><main>'
             + (f'<section class="w morning" aria-label="This morning">{"".join(morning)}</section>' if morning else "")
             + (front(lead, news_like, tz) if lead else "")
             + "".join(desk(s) for s in sections)
-            + f'</main><footer class="w foot"><span>{EN["footer"]}</span><span>Want changes? Just tell your bot.</span></footer>')
-    return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            f'<title>{e(hello)} · {date}</title><meta name="robots" content="noindex"><style>{css}</style></head>'
+            + why_block(cfg, report, every)
+            + f'</main><footer class="w foot"><span>{EN["footer"]}</span><span>{EN["tell_agent"]}</span></footer>')
+    return (f'<!doctype html><html lang="{EN["html_lang"]}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            f'<title>{e(hello)} · {date}</title><meta name="robots" content="noindex"><link rel="icon" href="{FAVICON}">'
+            f'<style>{css}</style></head>'
             f'<body class="paper" data-edition="{now:%Y-%m-%d}">{body}</body></html>')

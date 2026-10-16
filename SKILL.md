@@ -1,6 +1,6 @@
 ---
 name: sharectl-edition
-description: Create a personal morning newspaper through conversation. Ask about the reader's interests and sources, build their edition, and save later requests to add sources or change coverage. Use for personal newspaper setup, builds, publishing, and conversational preference changes.
+description: Create a personal morning newspaper through conversation, in the reader's own language. Ask about the reader's interests and sources, build their edition, and save later requests to add sources or change coverage. Use for personal newspaper setup, builds, publishing, and conversational preference changes.
 ---
 
 # sharectl-edition
@@ -30,10 +30,12 @@ Requires Python 3.10+. Optional: Node 18+ (`npx wrangler`) for Cloudflare Pages,
 Ask about the reader's wishes in their language **before building their first personalized edition**. Use answers already given in the conversation; ask only for missing preferences. Start with one short, friendly message covering:
 
 - What name/greeting they want, which topics and sources they enjoy, and what they want less of or excluded.
+- Which language the paper should be in. Assume the language they write to you in, and confirm it; the paper is
+  always in the reader's language, whatever it is (see "Language" below). Write the greeting in that language.
 - Whether to include weather (and which city), YouTube channels, or markets. Offer X only when you have the needed access.
 - Whether this is a one-off paper or a daily routine. Ask for time zone and ready time if they want a schedule.
 
-For example: "What should I call you, and what would you like in your paper? Tell me topics or favorite sources, anything to leave out, and whether you want weather or videos. Is this a one-off edition or something you want every morning?"
+For example: "What should I call you, and what would you like in your paper? Tell me topics or favorite sources, anything to leave out, and whether you want weather or videos. I'll make it in Swedish unless you'd rather have another language. Is this a one-off edition or something you want every morning?"
 
 Suggest a small set of sources when helpful. Find RSS/Atom URLs yourself for named sites and verify that they parse. Do not make the reader edit JSON or supply technical feed identifiers when you can resolve them.
 
@@ -46,6 +48,25 @@ After the answers:
 3. Parse the saved JSON and check the relevant values. Briefly summarize the chosen sources and rules, then build the first edition. Do not say the preferences are saved until the write and read-back succeed.
 
 Never put tokens or passwords in `config.json`. Credentials live in environment variables only.
+
+### Language
+
+Every word the page itself says (masthead, weather, markets, section labels, the "why" section, the closing line,
+date and time formats) comes from one table of strings, so the paper reads naturally in any language. Use the
+reader's language, not yours:
+
+- Set `"language"` to their code (`"en"`, `"sv"`, `"de"`, `"ja"`, ...). English and Swedish are built in.
+- For any other language, translate the table yourself and put it under `"strings"` in `config.json`:
+  ```bash
+  python3 -m sharectl_edition strings --lang en      # prints the English table as JSON
+  ```
+  Translate every value, keep the `{placeholders}`, and keep `"time"` a strftime pattern (`"%H:%M"` for 24-hour clocks).
+  `"days"` and `"months"` are lists, Monday and January first; `"date"` is the pattern they go into.
+  `"decimal"`, `"thousands"` and `"percent"` set how numbers are written (`","`, `" "` and `"{n} %"` for most of Europe).
+  Keys you leave out fall back to the built-in table (English for an unknown language).
+- `"strings"` also works for a built-in language when the reader wants a word changed ("call it Markets, not Börsen").
+- Section titles and subtitles in `sections`, the weather `place`, and the markets `title` are plain text you write
+  in the reader's language too. Headlines and summaries stay in whatever language the sources publish in.
 
 ## 3. Build
 
@@ -67,7 +88,7 @@ path in `sources.x.timeline_file`, set `sources.x.enabled: true`, then build. Po
 
 Pick what fits the user and set `publish.target`:
 
-- **`github` (recommended default)**: Pushes the built site to a `gh-pages` branch in the reader's own GitHub repository. The bot needs git push access (already configured if running in the repo). Set `publish.repo_url` (or leave empty to use the current repo's origin), and `publish.branch` (default: "gh-pages"). GitHub Pages must be enabled in the repo settings (Settings > Pages > Source: Deploy from a branch > gh-pages). The site will be live at `https://USERNAME.github.io/REPO-NAME/`.
+- **`github` (recommended default)**: Pushes the built site to a `gh-pages` branch in the reader's own GitHub repository. The agent needs git push access (already configured if running in the repo). Set `publish.repo_url` (or leave empty to use the current repo's origin), and `publish.branch` (default: "gh-pages"). GitHub Pages must be enabled in the repo settings (Settings > Pages > Source: Deploy from a branch > gh-pages). The site will be live at `https://USERNAME.github.io/REPO-NAME/`.
 
 - `cloudflare`: The user's own Cloudflare Pages project. Needs `CLOUDFLARE_API_TOKEN` (Account > Cloudflare Pages > Edit) and `CLOUDFLARE_ACCOUNT_ID` in the environment, and `publish.project`. Ask the user to create the token; never ask for their password.
 
@@ -80,7 +101,7 @@ python3 -m sharectl_edition publish --config config.json
 ```
 
 **GitHub Pages first-time setup:**
-1. The bot runs `publish` which creates/updates the `gh-pages` branch automatically
+1. The agent runs `publish` which creates/updates the `gh-pages` branch automatically
 2. Tell the user to enable Pages: go to the repo on GitHub → Settings → Pages → Source: "Deploy from a branch" → Branch: `gh-pages` → Save
 3. The site will be live at `https://USERNAME.github.io/REPO-NAME/` in ~1 minute
 
@@ -115,6 +136,7 @@ The page has no voting buttons. Requests such as "more AI", "less crypto", "hide
 | "Hide The Verge" | Run `feedback hide verge` with the active config; use the actual configured source ID. |
 | "Add/remove a source or YouTube channel" | Edit the appropriate `sources` list, resolve feed/channel identifiers and check new feeds. Preserve the other subscriptions. |
 | "Remove weather" | Set `modules.weather` to `null`. |
+| "Make it in German" / "call it Markets, not Börsen" | Set `language`; for a language that is not built in, translate the strings table into `strings` (see "Language"). A single changed word goes into `strings` too. Rewrite `greeting`, section titles and subtitles in that language. |
 | "Bring Tesla back" | Remove the matching exclusion and any conflicting saved keyword penalty; preserve unrelated preferences. |
 | "Show my preferences" | Read and summarize both the config and preference file, including exclusions and caps. This is read-only. |
 

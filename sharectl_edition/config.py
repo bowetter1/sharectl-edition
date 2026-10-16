@@ -7,6 +7,7 @@ DEFAULTS = {
     "greeting": "Good morning, {name}.",
     "timezone": "America/New_York",
     "language": "en",
+    "strings": {},  # the agent's translation of the UI strings for a language that is not built in
     "sources": {"rss": [], "youtube": [], "x": {"enabled": False, "timeline_file": ""}},
     "sections": [],
     "rules": {

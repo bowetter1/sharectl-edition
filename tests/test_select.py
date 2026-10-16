@@ -91,7 +91,52 @@ class RenderTests(unittest.TestCase):
         self.assertNotIn("<script>alert(1)", html)
         self.assertIn("Good morning, Sam.", html)
         self.assertNotIn('data-vote', html)
-        self.assertIn("Want changes? Just tell your bot.", html)
+        self.assertIn("Want changes? Just tell your agent.", html)
+        self.assertIn('lang="en"', html)
+
+    def test_render_swedish(self):
+        from zoneinfo import ZoneInfo
+        from sharectl_edition.render import template
+        tz = ZoneInfo("Europe/Stockholm")
+        when = datetime(2026, 10, 16, 7, 26, tzinfo=timezone.utc).isoformat()  # 09:26 in Stockholm
+        it = n("a", "Rubrik", image="https://example.com/i.jpg", author="Anna Svensson", published=when)
+        html = template.page({"greeting": "God morgon, {name}.", "name": "Bo", "language": "sv"},
+                             [{"key": "se", "title": "Sverige", "items": [it, n("b", "Andra storyn", published=when)]}], [],
+                             datetime(2026, 10, 16, 9, 0, tzinfo=tz), tz)
+        self.assertIn('lang="sv"', html)
+        self.assertIn("Fredag 16 oktober 2026", html)
+        self.assertIn("09:26", html)
+        self.assertIn("Det var allt värt att se i dag.", html)
+        self.assertIn("Toppnyhet", html)
+
+    def test_render_any_language_from_config_strings(self):
+        """A language that is not built in: the agent's translation in config.strings is used, gaps fall back to English."""
+        from zoneinfo import ZoneInfo
+        from sharectl_edition.render import template
+        tz = ZoneInfo("Europe/Berlin")
+        when = datetime(2026, 10, 16, 7, 26, tzinfo=timezone.utc).isoformat()
+        strings = {"top_story_nav": "Aufmacher", "the_end": "Das war alles für heute.", "time": "%H:%M",
+                   "days": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+                   "months": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September",
+                              "Oktober", "November", "Dezember"], "date": "{day}, {d}. {month} {y}",
+                   "skip_reasons": {"max per source": "Limit pro Quelle"}}
+        it = n("a", "Schlagzeile", image="https://example.com/i.jpg", author="Anna Müller", published=when)
+        html = template.page({"greeting": "Guten Morgen, {name}.", "name": "Bo", "language": "de", "strings": strings},
+                             [{"key": "de", "title": "Deutschland", "items": [it, n("b", "Zweite", published=when)]}], [],
+                             datetime(2026, 10, 16, 9, 0, tzinfo=tz), tz, {"skipped": {"max per source": 4}})
+        self.assertIn('lang="de"', html)
+        self.assertIn("Freitag, 16. Oktober 2026", html)
+        self.assertIn("Aufmacher", html)
+        self.assertIn("Das war alles für heute.", html)
+        self.assertIn("Limit pro Quelle", html)
+        self.assertIn("Latest", html)  # not translated: English fallback
+
+    def test_org_bylines_are_not_people(self):
+        from sharectl_edition.fetch import news
+        self.assertTrue(news.looks_like_org("Breaking Media AB"))
+        self.assertTrue(news.looks_like_org("SVT Nyheter"))
+        self.assertFalse(news.looks_like_org("Gabriel Abrahamsson"))
+        self.assertFalse(news.looks_like_org("Jane Doe"))
 
 
 class NetworkErrorTests(unittest.TestCase):

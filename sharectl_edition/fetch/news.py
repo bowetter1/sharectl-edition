@@ -16,7 +16,15 @@ from .. import net
 
 ATOM = "{http://www.w3.org/2005/Atom}"
 AGENCIES = {"ap": "AP", "associated press": "AP", "reuters": "Reuters", "afp": "AFP", "bloomberg": "Bloomberg"}
-ORG_WORDS = ["news", "staff", "newsroom", "editors", "editorial", "team", "desk", "contributor"]
+# A credited "author" that is really the outlet. Matched as whole words, so "AB" never catches "Gabriel".
+ORG_WORDS = ["news", "staff", "newsroom", "editors", "editorial", "team", "desk", "contributor", "contributors",
+             "media", "press", "group", "inc", "llc", "ltd", "ab", "as", "oy", "gmbh", "magazine", "journal", "times",
+             "post", "daily", "redaktion", "redaktionen", "nyheter", "tidning", "tt", "ntb", "ritzau"]
+_ORG_RE = re.compile(r"(?<![\w-])(?:" + "|".join(map(re.escape, ORG_WORDS)) + r")(?![\w-])", re.I)
+
+
+def looks_like_org(name: str) -> bool:
+    return bool(_ORG_RE.search(name or ""))
 
 
 def strip(t: str) -> str:
@@ -121,7 +129,7 @@ def byline(h: str, feed_author: str = "") -> dict:
             if n.lower() in AGENCIES:
                 agency = AGENCIES[n.lower()]
                 continue
-            if r.get("org") or len(n.split()) < 2 or any(w in n.lower() for w in ORG_WORDS):
+            if r.get("org") or len(n.split()) < 2 or looks_like_org(n):
                 continue
             people.append({"name": n, "image": r.get("image", ""), "title": r.get("title", "")})
     return {"people": people[:3], "agency": agency}
