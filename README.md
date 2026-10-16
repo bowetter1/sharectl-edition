@@ -1,64 +1,81 @@
 # sharectl-edition
 
-**Tell your AI what you want to read. Get your first personal newspaper.**
+**Your AI bot makes you a personal newspaper.**
 
-Copy this into an AI chat that can run Python, edit files, and show or attach an HTML file:
+Tell any AI bot that can fetch news from the web:
 
 > Make me a newspaper using https://github.com/bowetter1/sharectl-edition
 
-Your AI asks what topics or sources you want to read, selects the stories, and opens your paper. Python fetches the material and fills the existing template. If you already included your interests in the request, it can start straight away. You do not need to install anything yourself or edit a configuration file.
-
-Your first edition is a local web page with headlines, short summaries, images, bylines, and links to the original articles. The interface uses your language; headlines and summaries keep the source's language.
-
-Read it, then tell the same AI what to change: add a source, adjust coverage, or leave something out. It saves your choices for the next edition. Ask it to rebuild when you want to see the changes immediately.
-
-**Start by reading.** After showing your first paper, your AI asks whether you want a web address and automatic daily editions. You can choose either, both, or keep reading locally. If you opt in, it helps you choose hosting and a delivery time.
+Your bot asks what you want to read, fetches the content with its own tools, fills the HTML template, and shows you a beautiful newspaper—locally in your browser.
 
 ## How it works
 
-1. **Fetch:** Python saves candidate articles and the reader's current preferences to a private JSON file.
-2. **Edit:** your AI chooses stories, removes duplicates, assigns sections and picks the lead story by ID.
-3. **Render:** Python validates those references and fills the HTML template with the original headlines, summaries, links and bylines.
+1. Your bot interviews you about topics, sources, and people you follow
+2. It fetches articles, videos, and posts using its own web tools
+3. It selects the best content and fills `template.html` by hand (plain HTML, no build step)
+4. You get `index.html` to open in your browser
+5. Tell your bot what to change—it remembers for next time
 
-Existing `config.json` and `feedback.json` files are reused without migration. Rules and feedback guide the AI editor. No model API or API key is built into the package; the AI chat or scheduled agent performs the editorial step, including one attempt to correct an invalid selection.
+**No Python. No installation. No config files.** Just HTML your bot fills and saves locally.
 
-```bash
-python3 -m sharectl_edition fetch --config config.json --out candidates.json
-# The AI reads candidates.json and writes selection.json; see SKILL.md for the schema.
-python3 -m sharectl_edition build --config config.json --items candidates.json --selection selection.json --out site/
-```
+## For AI bots
 
-Keep both JSON files private, outside `site/`. For publishing, use `publish` with the same arguments. Automatic daily editions require an AI-agent schedule running all three steps. Previous one-step `build` commands must be updated.
+Read [`SKILL.md`](SKILL.md) for complete instructions on how to:
+- Interview the reader
+- Fetch content with your own tools (web search, RSS, X, YouTube)
+- Select and organize stories
+- Fill the template (with clear HTML comments showing where)
+- Handle missing tools (no X access? no problem)
+- Remember preferences for next time
 
-For offline layout testing, `fetch --from-items examples/items.json` imports the fictional demo data into a candidate packet; an explicit selection is still required.
+## Example
 
-## If AI selection fails
+![Example newspaper with AI/tech news](examples/screenshot.jpg)
 
-The first invalid or missing `selection.json` returns exit code **2**, prints the validation error and asks the AI to correct it once. The AI should repair the selection and rerun the same command with the same candidates and output path, without fetching a new batch. No model call is made by Python.
+View the example: open [`examples/example.html`](examples/example.html) in your browser.
 
-If that next attempt also fails, `build` and `publish` use this recovery chain:
+The example contains fictional content to demonstrate the layout. Your bot fills it with real news based on your interests.
 
-1. Show the last successfully built AI edition, retaining its original date and adding a visible warning. It is reused only when its saved reader preferences and feedback match the current candidate packet. Dated archives stay unchanged.
-2. If no matching previous edition is available, create a clearly labelled reserve of the latest dated items from each source. It applies hidden sources/authors/handles, literal mute keywords, source/channel/account caps (including zero), total limits, freshness, image requirements and political keyword caps. Semantic topic matching and boosts are unavailable in this reserve; the page says so.
+## Live demo
 
-An active political cap without `political_keywords` excludes news from the reserve because it cannot safely classify politics. Undated, future-dated and expired material is omitted. If nothing remains, the command returns **1** and keeps the existing output untouched. Invalid candidate packets or preferences changed since fetching also stop immediately with code **1**, without falling back. Successful normal or reserve builds return **0**; the report records the recovery mode and the terminal prints a warning when a reserve is used.
+See a real edition at [utgava.sharectl.com](https://utgava.sharectl.com/)
 
-Private recovery records live in `.edition-state/` beside the config, scoped to that config and output path. Keep this folder outside the published output and preserve it between agent runs. Only successful AI builds made with this version seed a verifiable previous-edition snapshot; older HTML without that record is not reused. A successful AI build resets the correction attempt, and every new candidate batch gets a new attempt. The direct Python `build()` API remains strict and never chooses a reserve implicitly.
+## Features
 
-## See the layout
+- **Clean, readable design** inspired by Apple's design language
+- **Sections**: lead story, news/business, videos, X/Twitter posts
+- **Mobile responsive** with a collapsible grid layout
+- **No JavaScript required** (except for YouTube embed on click)
+- **Plain HTML** so any bot can fill it—no templating engines
 
-[View the demo](https://utgava.sharectl.com/).
+## What your bot does
 
-The screenshot and files in `examples/` are a fictional layout demo, not default interests or subscriptions.
+✅ Fetches headlines and summaries (never full articles)  
+✅ Links everything to original sources  
+✅ Respects your interests and feedback  
+✅ Works without X or YouTube if those tools aren't available  
+✅ Saves your preferences in its conversation memory  
 
-![Fictional example edition](examples/screenshot.jpg)
+## What it doesn't do
 
-## For agents and developers
+❌ No web scraping of full articles (just headlines + links)  
+❌ No API keys or accounts required  
+❌ No installation or setup steps for you  
+❌ No config files to edit manually  
 
-- [`SKILL.md`](SKILL.md): ask, save, build, and show the first edition.
-- [`config.example.json`](config.example.json): neutral starter with no sources, topic preferences, weather, or markets selected.
-- `sharectl_edition/`: the builder, using Python 3.10+ and the standard library. No package installation is required.
+## Files
 
-The AI handles setup in its own environment. If it cannot run Python or deliver HTML, it should explain that limitation rather than promise a working paper.
+- **`template.html`** — The newspaper template (HTML + inline CSS)
+- **`SKILL.md`** — Complete instructions for AI bots
+- **`examples/example.html`** — Fictional example showing the layout
+- **`LICENSE`** — MIT license
 
-Part of [sharectl.com](https://sharectl.com). Headlines link to publishers; full articles are never republished. [MIT license](LICENSE).
+## Part of sharectl
+
+This is the template-only version of sharectl-edition. Headlines link to publishers; full articles are never republished.
+
+Made by [Bo Wetter](https://sharectl.com) and contributors. [MIT license](LICENSE).
+
+---
+
+**Get started:** Just tell your AI bot to make you a newspaper using this repo.
