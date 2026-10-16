@@ -1,27 +1,27 @@
 # sharectl-edition
 
-**Your AI bot makes you a personal newspaper.**
+**Your AI agent makes you a personal newspaper.**
 
-Tell any AI bot that can fetch news from the web:
+Tell any AI agent that can fetch news from the web:
 
 > Make me a newspaper using https://github.com/bowetter1/sharectl-edition
 
-Your bot asks what you want to read, fetches the content with its own tools, fills the HTML template, and shows you a beautiful newspaper—locally in your browser.
+Your agent asks what you want to read, waits for your answer, fetches the content with its own tools, fills the HTML template, and shows you a beautiful newspaper—locally in your browser.
 
 ## How it works
 
-1. Your bot interviews you about topics, sources, and people you follow
+1. Your agent asks about topics, sources, and people you follow, and waits for your answer
 2. It fetches articles, videos, and posts using its own web tools
 3. It selects the best content and fills `template.html` by hand (plain HTML, no build step)
 4. You get `index.html` to open in your browser
-5. Tell your bot what to change—it remembers for next time
+5. Tell your agent what to change—it remembers, and checks with you next time
 
-**No Python. No installation. No config files.** Just HTML your bot fills and saves locally.
+**No Python. No installation. No config files.** Just HTML your agent fills and saves locally.
 
-## For AI bots
+## For AI agents
 
 Read [`SKILL.md`](SKILL.md) for complete instructions on how to:
-- Interview the reader
+- Interview the reader first, before fetching anything
 - Fetch content with your own tools (web search, RSS, X, YouTube)
 - Select and organize stories
 - Fill the template (with clear HTML comments showing where)
@@ -34,7 +34,7 @@ Read [`SKILL.md`](SKILL.md) for complete instructions on how to:
 
 View the example: open [`examples/example.html`](examples/example.html) in your browser.
 
-The example contains fictional content to demonstrate the layout. Your bot fills it with real news based on your interests.
+The example contains fictional content to demonstrate the layout. Your agent fills it with real news based on your interests.
 
 ## Live demo
 
@@ -46,9 +46,9 @@ See a real edition at [utgava.sharectl.com](https://utgava.sharectl.com/)
 - **Sections**: lead story, news/business, videos, X/Twitter posts
 - **Mobile responsive** with a collapsible grid layout
 - **No JavaScript required** (except for YouTube embed on click)
-- **Plain HTML** so any bot can fill it—no templating engines
+- **Plain HTML** so any agent can fill it—no templating engines
 
-## What your bot does
+## What your agent does
 
 ✅ Fetches headlines and summaries (never full articles)  
 ✅ Links everything to original sources  
@@ -66,9 +66,18 @@ See a real edition at [utgava.sharectl.com](https://utgava.sharectl.com/)
 ## Files
 
 - **`template.html`** — The newspaper template (HTML + inline CSS)
-- **`SKILL.md`** — Complete instructions for AI bots
+- **`SKILL.md`** — Complete instructions for AI agents
 - **`examples/example.html`** — Fictional example showing the layout
 - **`LICENSE`** — MIT license
+
+## Testing the skill
+
+Test it the way a new reader meets it:
+
+1. Open a new chat with no memory of you and no earlier `config.json` within reach.
+2. Paste: "Make me a newspaper using https://github.com/bowetter1/sharectl-edition"
+3. The first reply should be the interview questions, and nothing should be fetched before you answer.
+4. Answer, then check that `index.html` uses only blocks from `template.html`, drops empty sections, and links every headline.
 
 ## Part of sharectl
 
@@ -78,4 +87,4 @@ Made by [Bo Wetter](https://sharectl.com) and contributors. [MIT license](LICENS
 
 ---
 
-**Get started:** Just tell your AI bot to make you a newspaper using this repo.
+**Get started:** Just tell your AI agent to make you a newspaper using this repo.
