@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+/config.json
+/feedback.json
+/x-timeline.json
+/site/
+.env
