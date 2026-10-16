@@ -1,6 +1,6 @@
 {
- "date": "2026-10-16T06:20:59.480334-04:00",
- "batch_id": "7d2cf7bfe9a8731351fac319d8337ac95b22767cf01f494eea1f8b34d2ad8302",
+ "date": "2026-10-16T06:40:04.101574-04:00",
+ "batch_id": "31a5aeb0d5bb1a5345ba12660f31ea5efdbd515d9c4ad6d9f9032386eb43dfdc",
  "sources": {
   "verge": {
    "name": "The Verge",
@@ -26,28 +26,38 @@
    "feed": "https://feeds.arstechnica.com/arstechnica/index",
    "read": 8
   },
-  "espn": {
-   "name": "ESPN NBA",
+  "yt-fireship": {
    "ok": true,
-   "feed": "https://www.espn.com/espn/rss/nba/news",
-   "read": 8
+   "videos": 15
+  },
+  "x": {
+   "ok": true,
+   "read": 3,
+   "kept": 3
   }
  },
  "counts": {
-  "news": 11
+  "news": 10,
+  "video": 3,
+  "post": 3
  },
  "selected_ids": [
-  "verge-6e00068821",
   "verge-41d2a43ff6",
   "verge-09b153c076",
+  "verge-924ca13842",
+  "verge-b78fa0f3af",
+  "verge-66efd2f876",
+  "verge-54d7a618ec",
+  "verge-2c7772f855",
+  "verge-c45d09bd01",
   "hn-7e080edd95",
   "hn-092fa14258",
-  "hn-34bf133078",
-  "simonw-08c7976423",
-  "simonw-6702d1aaf0",
-  "simonw-bbc1e25e9e",
-  "arstechnica-05651cde62",
-  "espn-4769ca24af"
+  "yt-l3L_lETiSzc",
+  "yt-QZVzuq28eFw",
+  "yt-wajoP_5Cpw8",
+  "x-1746543210987654321",
+  "x-1746543210987654322",
+  "x-1746543210987654323"
  ],
- "lead_id": "verge-6e00068821"
+ "lead_id": "verge-41d2a43ff6"
 }

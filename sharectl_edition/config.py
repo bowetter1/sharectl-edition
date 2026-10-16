@@ -8,7 +8,7 @@ DEFAULTS = {
     "timezone": "UTC",
     "language": "en",
     "strings": {},  # the agent's translation of the UI strings for a language that is not built in
-    "sources": {"rss": [], "youtube": [], "x": {"enabled": False, "timeline_file": ""}},
+    "sources": {"rss": [], "youtube": [], "x": {"enabled": False, "timeline_file": "", "section": ""}},
     "sections": [],
     "rules": {
         "max_per_source": 3,

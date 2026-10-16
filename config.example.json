@@ -4,7 +4,13 @@
   "timezone": "UTC",
   "strings": {},
   "sources": {
-    "rss": []
+    "rss": [],
+    "youtube": [],
+    "x": {
+      "enabled": false,
+      "timeline_file": "",
+      "section": ""
+    }
   },
   "sections": [],
   "rules": {

@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from . import feedback
-from .fetch import news
+from .fetch import news, x, youtube
 from .render import template
 
 
@@ -24,6 +24,9 @@ def reader_settings(cfg, base_dir):
     keys = ('name', 'greeting', 'timezone', 'sources', 'sections', 'rules')
     reader = {key: copy.deepcopy(cfg.get(key)) for key in keys}
     import os
+    # Remove X timeline file path (private)
+    if 'x' in reader['sources']:
+        reader['sources']['x'].pop('timeline_file', None)
     reader['feedback'] = feedback.load(os.path.join(base_dir, cfg['feedback_file']))
     return reader
 
@@ -34,10 +37,26 @@ def batch_id(packet):
 
 
 def collect(cfg, base_dir='.'):
-    """Fetch RSS feeds, return candidates with reader preferences."""
+    """Fetch RSS, YouTube, X; return candidates with reader preferences."""
     sources, articles = news.run(cfg['sources']['rss'])
     
-    ids = [item['id'] for item in articles]
+    # YouTube videos
+    yt_stats, videos = youtube.run(cfg['sources'].get('youtube', []))
+    sources.update(yt_stats)
+    
+    # X posts
+    posts = []
+    xcfg = cfg['sources'].get('x') or {}
+    if xcfg.get('enabled'):
+        path = xcfg.get('timeline_file')
+        if not path:
+            raise ValueError('X is enabled but timeline_file is missing')
+        import os
+        x_stats, posts = x.from_timeline(os.path.join(base_dir, path), xcfg.get('section', ''))
+        sources.update(x_stats)
+    
+    items = articles + videos + posts
+    ids = [item['id'] for item in items]
     if len(set(ids)) != len(ids):
         raise ValueError('Duplicate candidate IDs; check source IDs')
     
@@ -46,7 +65,7 @@ def collect(cfg, base_dir='.'):
         'date': datetime.now(ZoneInfo(cfg['timezone'])).isoformat(),
         'reader': reader_settings(cfg, base_dir),
         'sources': sources,
-        'items': articles
+        'items': items
     }
     packet['batch_id'] = batch_id(packet)
     return packet
@@ -77,7 +96,7 @@ def load_candidates(cfg, base_dir, items_path):
                 if not isinstance(item[key], str):
                     raise ValueError()
             url = urlsplit(item['url'])
-            if item['id'] in ids or item['kind'] != 'news' or url.scheme not in ('https', 'http'):
+            if item['id'] in ids or item['kind'] not in ('news', 'video', 'post') or url.scheme not in ('https', 'http'):
                 raise ValueError()
             ids.add(item['id'])
     except (KeyError, TypeError, ValueError):
@@ -110,7 +129,7 @@ def render_selection(cfg, packet, selection):
     sections = {s['key']: {**s, 'items': []} for s in definitions}
     candidates = {it['id']: it for it in packet['items']}
     seen = set()
-    count = 0
+    counts = {'news': 0, 'video': 0, 'post': 0}
     
     for entry in chosen:
         if not isinstance(entry, dict) or set(entry) != {'id', 'section'}:
@@ -126,11 +145,16 @@ def render_selection(cfg, packet, selection):
         item = copy.deepcopy(candidates[ident])
         sections[section]['items'].append(item)
         seen.add(ident)
-        count += 1
+        counts[item['kind']] += 1
     
     lead = selection.get('lead_id')
-    if not isinstance(lead, str) or lead not in seen:
-        raise SelectionError('lead_id must identify a selected item')
+    if lead is not None:
+        if not isinstance(lead, str) or lead not in seen:
+            raise SelectionError('lead_id must identify a selected item')
+        if candidates[lead]['kind'] == 'video':
+            raise SelectionError('lead_id cannot be a video')
+    elif counts['news'] + counts['post']:
+        raise SelectionError('lead_id required when news or posts are selected')
     
     tz = ZoneInfo(cfg['timezone'])
     now = datetime.fromisoformat(packet['date']).astimezone(tz)
@@ -138,7 +162,7 @@ def render_selection(cfg, packet, selection):
         'date': now.isoformat(),
         'batch_id': packet['batch_id'],
         'sources': packet['sources'],
-        'counts': {'news': count},
+        'counts': counts,
         'selected_ids': [entry['id'] for entry in chosen],
         'lead_id': lead
     }

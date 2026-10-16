@@ -12,7 +12,7 @@ Your AI asks what topics or sources you want, selects the stories, and shows you
 
 ## How it works
 
-1. **Fetch:** RSS feeds → `candidates.json`
+1. **Fetch:** RSS feeds, YouTube channels, X posts → `candidates.json`
 2. **Select:** AI picks stories, writes `selection.json`
 3. **Render:** Python fills the template → `site/index.html`
 
@@ -22,7 +22,7 @@ python3 -m sharectl_edition fetch --config config.json --out candidates.json
 python3 -m sharectl_edition build --config config.json --items candidates.json --selection selection.json --out site/
 ```
 
-The local paper has headlines, summaries, images, and bylines. Headlines link to publishers; full articles live on their sites.
+The local paper has headlines, summaries, images, and bylines from news, X posts, and videos. Headlines link to publishers; full articles live on their sites.
 
 Read it, then tell your AI what to change: add a source, adjust coverage, or leave something out. It saves your choices and rebuilds when you want to see them.
 
@@ -32,6 +32,6 @@ Read it, then tell your AI what to change: add a source, adjust coverage, or lea
 
 [`config.example.json`](config.example.json) — minimal starter.
 
-Python 3.10+ with standard library only. No credentials needed for RSS feeds.
+Python 3.10+ with standard library only. No credentials needed for RSS and YouTube. X posts require the AI to fetch the timeline with its own X tools.
 
 Part of [sharectl.com](https://sharectl.com) · [MIT license](LICENSE)

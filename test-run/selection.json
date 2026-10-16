@@ -1,17 +1,37 @@
 {
-  "batch_id": "7d2cf7bfe9a8731351fac319d8337ac95b22767cf01f494eea1f8b34d2ad8302",
-  "lead_id": "verge-6e00068821",
+  "batch_id": "31a5aeb0d5bb1a5345ba12660f31ea5efdbd515d9c4ad6d9f9032386eb43dfdc",
+  "lead_id": "verge-41d2a43ff6",
   "items": [
-    {
-      "id": "verge-6e00068821",
-      "section": "tech"
-    },
     {
       "id": "verge-41d2a43ff6",
       "section": "tech"
     },
     {
       "id": "verge-09b153c076",
+      "section": "tech"
+    },
+    {
+      "id": "verge-924ca13842",
+      "section": "tech"
+    },
+    {
+      "id": "verge-b78fa0f3af",
+      "section": "tech"
+    },
+    {
+      "id": "verge-66efd2f876",
+      "section": "tech"
+    },
+    {
+      "id": "verge-54d7a618ec",
+      "section": "tech"
+    },
+    {
+      "id": "verge-2c7772f855",
+      "section": "tech"
+    },
+    {
+      "id": "verge-c45d09bd01",
       "section": "tech"
     },
     {
@@ -23,28 +43,28 @@
       "section": "tech"
     },
     {
-      "id": "hn-34bf133078",
+      "id": "yt-l3L_lETiSzc",
       "section": "tech"
     },
     {
-      "id": "simonw-08c7976423",
+      "id": "yt-QZVzuq28eFw",
       "section": "tech"
     },
     {
-      "id": "simonw-6702d1aaf0",
+      "id": "yt-wajoP_5Cpw8",
       "section": "tech"
     },
     {
-      "id": "simonw-bbc1e25e9e",
-      "section": "tech"
+      "id": "x-1746543210987654321",
+      "section": "social"
     },
     {
-      "id": "arstechnica-05651cde62",
-      "section": "tech"
+      "id": "x-1746543210987654322",
+      "section": "social"
     },
     {
-      "id": "espn-4769ca24af",
-      "section": "sports"
+      "id": "x-1746543210987654323",
+      "section": "social"
     }
   ]
 }

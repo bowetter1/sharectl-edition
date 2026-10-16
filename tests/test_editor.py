@@ -17,17 +17,22 @@ class EditorTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.cfg = copy.deepcopy(config.DEFAULTS)
         self.cfg.update(sections=[{'key': 'news', 'title': 'News'}])
+        self.cfg['sources'].update({'youtube': [], 'x': {'enabled': False, 'timeline_file': '', 'section': ''}})
         self.cfg['rules'].update(mute_keywords=['Sailing'])
         self.cfg['feedback_file'] = 'feedback.json'
         self.weights = {**copy.deepcopy(feedback.EMPTY), 'sources': {'a': 5}, 'hidden': ['b']}
         (self.root / 'feedback.json').write_text(json.dumps(self.weights))
         
         items = [self.item('a'), self.item('b')]
+        # reader_settings removes timeline_file (private path)
+        reader_sources = copy.deepcopy(self.cfg['sources'])
+        reader_sources['x'].pop('timeline_file', None)
+        
         self.packet = {
             'version': 1,
             'date': '2026-10-16T07:00:00+00:00',
             'reader': {'feedback': self.weights, 'rules': self.cfg['rules'], 
-                       'sources': self.cfg['sources'], 'sections': self.cfg['sections'],
+                       'sources': reader_sources, 'sections': self.cfg['sections'],
                        'name': 'Reader', 'greeting': 'Good morning, {name}.', 'timezone': 'UTC'},
             'sources': {'a': {'ok': True, 'read': 1}, 'b': {'ok': True, 'read': 1}},
             'items': items

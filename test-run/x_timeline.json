@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "id": "1746543210987654321",
+      "text": "Just shipped a major update to our AI agent framework. Now supports streaming responses and function calling. Check it out: https://t.co/abc123",
+      "author_id": "12345",
+      "created_at": "2026-10-15T14:30:00.000Z",
+      "public_metrics": {"like_count": 42},
+      "entities": {
+        "urls": [
+          {"expanded_url": "https://github.com/example/ai-framework"}
+        ]
+      }
+    },
+    {
+      "id": "1746543210987654322",
+      "text": "Quick tip for developers: Always validate your LLM outputs before showing them to users. Seen too many hallucinations in production recently.",
+      "author_id": "12345",
+      "created_at": "2026-10-15T12:00:00.000Z",
+      "public_metrics": {"like_count": 156}
+    },
+    {
+      "id": "1746543210987654323",
+      "text": "The new Claude 4.5 Sonnet is incredible for code generation. Tried it on a React component and it got it right first try.",
+      "author_id": "67890",
+      "created_at": "2026-10-15T10:00:00.000Z",
+      "public_metrics": {"like_count": 234}
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "12345",
+        "username": "devrel_pro",
+        "name": "Dev Relations Pro",
+        "profile_image_url": "https://pbs.twimg.com/profile_images/123_normal.jpg"
+      },
+      {
+        "id": "67890",
+        "username": "ai_researcher",
+        "name": "AI Researcher",
+        "profile_image_url": "https://pbs.twimg.com/profile_images/456_normal.jpg"
+      }
+    ]
+  }
+}

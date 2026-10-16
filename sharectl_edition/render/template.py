@@ -50,12 +50,18 @@ def byline(it):
     """Writer's name before the outlet."""
     if it.get("author"):
         names = ", ".join([it["author"]] + it.get("coauthors", []))
-        sub = " · ".join(x for x in (it.get("author_title"), it["source_name"], it.get("agency")) if x)
+        if it["kind"] == "post":
+            sub = "@" + it.get("handle", "") + (" · " + STRINGS["via"].format(name=it["via"]) if it.get("via") else "")
+        else:
+            sub = " · ".join(x for x in (it.get("author_title"), it["source_name"], it.get("agency")) if x)
         return f'<div class="by"><span><b>{e(names)}</b><small>{e(sub)}</small></span></div>'
     return f'<div class="by"><span><b>{e(it["source_name"])}</b></span></div>'
 
 
 def hed(it, size):
+    if it["kind"] == "post":
+        n = 170 if size == "small" else 420
+        return f'<p class="hed {size}"><a href="{esc_attr(it["url"])}">{e(short(it["text"], n))}</a></p>'
     return f'<h3 class="hed {size}"><a href="{esc_attr(it["url"])}">{e(it["title"])}</a></h3>'
 
 
@@ -107,21 +113,52 @@ def briefs(items):
     return f'<div class="w briefs"><p class="kicker">{STRINGS["more_news"]}</p>{rows}</div>'
 
 
+def voices(items):
+    """X posts rendered as quote cards."""
+    cards = "".join(art(it, "voice", f'{byline(it)}<p class="quote"><a href="{esc_attr(it["url"])}">{e(it["text"])}</a></p>'
+                        + (f'<a class="out" href="{esc_attr(it["link_out"])}">{STRINGS["read_more"].format(site=e(urlsplit(it["link_out"]).netloc))} →</a>'
+                           if it.get("link_out") else "")) for it in items)
+    return f'<div class="w voices"><p class="kicker">{STRINGS["voices"]}</p><div class="v-grid">{cards}</div></div>'
+
+
+def video_desk(sec):
+    """Video section with play button overlays."""
+    tiles = "".join(art(it, "tile", f'<a class="yt" href="{esc_attr(it["url"])}"><img src="{esc_attr(it["image"])}" alt="" loading="lazy">'
+                        f'<span class="play-btn" aria-hidden="true"></span></a>{byline(it)}{hed(it, "small")}')
+                    for it in sec["items"])
+    return (f'<section class="desk videos" id="{sec["key"]}" style="--s:{sec["color"]}"><header class="w d-head">'
+            f'<h2>{e(sec["title"])}</h2></header><div class="w v-tiles">{tiles}</div></section>')
+
+
 def desk(sec):
     items = sec["items"]
+    
+    # All videos: use video layout
+    if all(it["kind"] == "video" for it in items):
+        return video_desk(sec)
+    
     blocks = []
     
-    main, others = items[0], items[1:]
-    side = others[:3]
-    remaining = others[3:]
-    
-    aside = f'<aside class="t-side">{"".join(small(it) for it in side)}</aside>'
-    blocks.append(f'<div class="w top"><div class="t-main">{big(main)}</div>{aside}</div>')
-    
-    if remaining:
-        blocks.append(two(remaining[:2]))
-    if len(remaining) > 2:
-        blocks.append(briefs(remaining[2:]))
+    # Group consecutive text-only posts together
+    from itertools import groupby
+    for text_only, group in groupby(items, key=lambda it: it["kind"] == "post" and not it.get("image")):
+        ordered = list(group)
+        if text_only:
+            blocks.append(voices(ordered))
+            continue
+        
+        # Regular news layout
+        main = ordered[0]
+        side = ordered[1:4]
+        remaining = ordered[4:]
+        
+        aside = f'<aside class="t-side">{"".join(small(it) for it in side)}</aside>'
+        blocks.append(f'<div class="w top"><div class="t-main">{big(main)}</div>{aside}</div>')
+        
+        if remaining:
+            blocks.append(two(remaining[:2]))
+        if len(remaining) > 2:
+            blocks.append(briefs(remaining[2:]))
     
     head = f'<header class="w d-head"><h2>{e(sec["title"])}</h2>' + (f'<p>{e(sec["sub"])}</p>' if sec.get("sub") else "") + "</header>"
     return f'<section class="desk" id="{sec["key"]}" style="--s:{sec["color"]}">{head}{"".join(blocks)}</section>'
@@ -155,10 +192,11 @@ def page(cfg, sections, now, tz, report=None, lead_id=None):
             it["sec"], it["sec_title"], it["sec_color"] = s["key"], s["title"], s["color"]
     
     every = [it for s in sections for it in s["items"]]
-    lead = next((it for it in every if it.get("image")), every[0] if every else None)
+    news_like = [it for it in every if it["kind"] != "video"]
+    lead = next((it for it in news_like if it.get("image") and it["kind"] == "news"), news_like[0] if news_like else None)
     
     if lead_id is not None:
-        lead = next(it for it in every if it["id"] == lead_id)
+        lead = next(it for it in news_like if it["id"] == lead_id)
     
     if lead:
         for s in sections:
