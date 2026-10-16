@@ -43,18 +43,28 @@ You can also say "add this YouTube channel", "remove the weather", or "show my p
 
 👉 **[Live demo: utgava.sharectl.com](https://utgava.sharectl.com/)**
 
-![Example edition](examples/screenshot.jpg)
+The screenshot and files under `examples/` show a fictional layout demo, not suggested subscriptions or default reader settings.
+
+![Fictional example edition](examples/screenshot.jpg)
 
 ## Quickstart: by hand
 
 ```bash
 git clone https://github.com/bowetter1/sharectl-edition.git && cd sharectl-edition
-cp config.example.json config.json        # edit name, sources, rules
+cp config.example.json config.json        # choose your name, language, time zone, sources and rules
 python3 -m sharectl_edition build --config config.json --out site/
 open site/index.html
 ```
 
 Python 3.10+, standard library only.
+
+The starter config is intentionally empty: no subscribed sources, topic boosts or exclusions, political cap, weather, or markets. Add your own sources before building. English, UTC and “Reader” are technical placeholders; replace them during setup. Publishing defaults to a local static folder.
+
+For an offline layout demo using fictional data (not reader defaults):
+
+```bash
+python3 -m sharectl_edition build --config examples/config.json --from-items examples/items.json --out examples/site/
+```
 
 ## What's in a paper
 
@@ -70,14 +80,13 @@ Python 3.10+, standard library only.
 ## How selection works
 
 `sharectl_edition/select.py`, in order: hidden sources and muted keywords out; each source's items ranked by your
-feedback and boost keywords; near-duplicate headlines across sources removed; politics capped (configurable keyword
-list); per-source caps; round-robin across sources so no single outlet takes over. Every decision is in `site/report.json`.
+feedback and boost keywords; near-duplicate headlines across sources removed; politics capped only if configured (`max_political: null` means no cap; `0` excludes matching news); per-source caps; round-robin across sources so no single outlet takes over. Video selection has no automatic politics exclusion; explicit `mute_keywords` apply to news, videos and posts. `max_political` applies to news only. Selection counts and skip reasons are in `site/report.json`.
 
 ## Commands
 
 ```
 python -m sharectl_edition build    --config config.json --out site/
-python -m sharectl_edition publish  --config config.json          # github (default) | cloudflare | sharectl | static
+python -m sharectl_edition publish  --config config.json          # static (default) | github | cloudflare | sharectl
 python -m sharectl_edition feedback show --config config.json
 python -m sharectl_edition feedback boost SOURCE 1.0 --config config.json
 python -m sharectl_edition feedback mute KEYWORD -0.5 --config config.json
@@ -97,7 +106,7 @@ python -m sharectl_edition strings --lang en                      # the UI strin
 
 ```
 SKILL.md                  instructions for the agent
-config.example.json       US defaults: AP, The Verge, TechCrunch, Ars Technica, NYT Tech, Hacker News, Simon Willison, Stratechery, AI YouTube
+config.example.json       neutral starter; reader chooses sources, topics and optional modules
 sharectl_edition/
   fetch/                  news.py (RSS/Atom + Open Graph + bylines), youtube.py, x.py, weather.py, markets.py
   select.py               the editorial rules

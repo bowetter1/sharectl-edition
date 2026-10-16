@@ -1,83 +1,14 @@
 {
-  "name": "Alex",
+  "name": "Demo reader",
   "greeting": "Good morning, {name}.",
-  "timezone": "America/New_York",
+  "timezone": "UTC",
   "language": "en",
   "sources": {
-    "rss": [
-      {
-        "id": "ap",
-        "name": "AP News",
-        "url": [
-          "https://feedx.net/rss/ap.xml",
-          "https://apnews.com/index.rss"
-        ],
-        "section": "us"
-      },
-      {
-        "id": "verge",
-        "name": "The Verge",
-        "url": "https://www.theverge.com/rss/index.xml",
-        "section": "tech"
-      },
-      {
-        "id": "techcrunch",
-        "name": "TechCrunch",
-        "url": "https://techcrunch.com/feed/",
-        "section": "tech",
-        "priority": 1
-      },
-      {
-        "id": "ars",
-        "name": "Ars Technica",
-        "url": "https://feeds.arstechnica.com/arstechnica/index",
-        "section": "tech"
-      },
-      {
-        "id": "nyt-tech",
-        "name": "The New York Times",
-        "url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-        "section": "tech"
-      },
-      {
-        "id": "hn",
-        "name": "Hacker News",
-        "url": "https://hnrss.org/frontpage?points=150",
-        "section": "tech",
-        "enrich": true
-      },
-      {
-        "id": "simonw",
-        "name": "Simon Willison",
-        "url": "https://simonwillison.net/atom/everything/",
-        "section": "ai",
-        "cap": 2
-      },
-      {
-        "id": "stratechery",
-        "name": "Stratechery",
-        "url": "https://stratechery.com/feed/",
-        "section": "business",
-        "cap": 1
-      }
-    ],
-    "youtube": [
-      {
-        "handle": "Fireship"
-      },
-      {
-        "handle": "TwoMinutePapers"
-      },
-      {
-        "handle": "aiexplained-official"
-      },
-      {
-        "handle": "AndrejKarpathy"
-      }
-    ],
+    "rss": [],
+    "youtube": [],
     "x": {
       "enabled": false,
-      "timeline_file": "x-timeline.json",
+      "timeline_file": "",
       "section": ""
     }
   },
@@ -157,18 +88,10 @@
     "max_posts": 20,
     "max_per_x_account": 2,
     "fresh_days": 14,
-    "max_political": 2,
+    "max_political": null,
     "political_keywords": [],
-    "boost_keywords": [
-      "ai",
-      "agents",
-      "open source"
-    ],
-    "mute_keywords": [
-      "horoscope",
-      "sponsored",
-      "deal of the day"
-    ],
+    "boost_keywords": [],
+    "mute_keywords": [],
     "require_image": false
   },
   "modules": {
@@ -201,10 +124,8 @@
   },
   "publish": {
     "target": "static",
-    "out": "site",
-    "project": "my-edition",
-    "url": "",
-    "token_env": "SHARECTL_TOKEN"
+    "out": "site"
   },
-  "feedback_file": "feedback.json"
+  "feedback_file": "demo-feedback.json",
+  "_note": "Offline fictional layout demo only. Start new readers from config.example.json, not this file."
 }

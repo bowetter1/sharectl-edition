@@ -4,7 +4,7 @@ Order of operations:
   1. drop hidden sources/authors and muted keywords
   2. rank each source's candidates by feedback score + boost keywords (feed order breaks ties)
   3. near-duplicate headlines across sources are dropped (first one wins)
-  4. political stories are capped (keyword list is configurable)
+  4. political stories are capped only when the reader configures a limit
   5. per-source caps, then a round-robin across sources up to max_news
   6. each item lands in a section by keywords, else its source's default section
 """
@@ -86,7 +86,8 @@ def pick_news(items: list[dict], rules: dict, w: dict, avoid: list[str] = ()) ->
                 skipped["same story as another source"] += 1
             elif len(kept[src]) >= cap:
                 skipped["max per source"] += 1
-            elif has(text, political) and pol >= rules.get("max_political", 2):
+            elif (rules.get("max_political") is not None
+                  and has(text, political) and pol >= rules["max_political"]):
                 skipped["politics cap"] += 1
             else:
                 if has(text, political):
@@ -104,10 +105,9 @@ def pick_news(items: list[dict], rules: dict, w: dict, avoid: list[str] = ()) ->
 
 def pick_videos(items: list[dict], rules: dict, w: dict, now) -> list[dict]:
     from datetime import datetime
-    political = rules.get("political_keywords") or DEFAULT_POLITICAL
     by = collections.defaultdict(list)
     for it in items:
-        if feedback.is_hidden(it, w) or has(it["title"], political) or has(it["title"], rules.get("mute_keywords", [])):
+        if feedback.is_hidden(it, w) or has(it["title"], rules.get("mute_keywords", [])):
             continue
         age = (now - datetime.fromisoformat(it["published"])).days
         it["age_days"] = age

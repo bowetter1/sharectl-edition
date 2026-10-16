@@ -80,7 +80,7 @@ def main(argv=None):
     print(f"wrote {path}  {report['counts']}")
 
     if a.cmd == "publish":
-        target = cfg["publish"].get("target", "github")
+        target = cfg["publish"].get("target", "static")
         if target == "github":
             from .publish import github
             repo = cfg["publish"].get("repo_url")

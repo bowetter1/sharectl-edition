@@ -100,7 +100,7 @@ class RenderTests(unittest.TestCase):
         tz = ZoneInfo("Europe/Stockholm")
         when = datetime(2026, 10, 16, 7, 26, tzinfo=timezone.utc).isoformat()  # 09:26 in Stockholm
         it = n("a", "Rubrik", image="https://example.com/i.jpg", author="Anna Svensson", published=when)
-        html = template.page({"greeting": "God morgon, {name}.", "name": "Bo", "language": "sv"},
+        html = template.page({"greeting": "God morgon, {name}.", "name": "Sam", "language": "sv"},
                              [{"key": "se", "title": "Sverige", "items": [it, n("b", "Andra storyn", published=when)]}], [],
                              datetime(2026, 10, 16, 9, 0, tzinfo=tz), tz)
         self.assertIn('lang="sv"', html)
@@ -121,7 +121,7 @@ class RenderTests(unittest.TestCase):
                               "Oktober", "November", "Dezember"], "date": "{day}, {d}. {month} {y}",
                    "skip_reasons": {"max per source": "Limit pro Quelle"}}
         it = n("a", "Schlagzeile", image="https://example.com/i.jpg", author="Anna Müller", published=when)
-        html = template.page({"greeting": "Guten Morgen, {name}.", "name": "Bo", "language": "de", "strings": strings},
+        html = template.page({"greeting": "Guten Morgen, {name}.", "name": "Sam", "language": "de", "strings": strings},
                              [{"key": "de", "title": "Deutschland", "items": [it, n("b", "Zweite", published=when)]}], [],
                              datetime(2026, 10, 16, 9, 0, tzinfo=tz), tz, {"skipped": {"max per source": 4}})
         self.assertIn('lang="de"', html)

@@ -33,7 +33,7 @@ Ask about the reader's wishes in their language **before building their first pe
 - Which language the paper should be in. Assume the language they write to you in, and confirm it; the paper is
   always in the reader's language, whatever it is (see "Language" below). Write the greeting in that language.
 - Whether to include weather (and which city), YouTube channels, or markets. Offer X only when you have the needed access.
-- Whether this is a one-off paper or a daily routine. Ask for time zone and ready time if they want a schedule.
+- The reader’s time zone, and whether this is a one-off paper or a daily routine. Ask for a ready time if they want a schedule.
 
 For example: "What should I call you, and what would you like in your paper? Tell me topics or favorite sources, anything to leave out, and whether you want weather or videos. I'll make it in Swedish unless you'd rather have another language. Is this a one-off edition or something you want every morning?"
 
@@ -43,7 +43,7 @@ Suggest a small set of sources when helpful. Find RSS/Atom URLs yourself for nam
 
 After the answers:
 
-1. Create a private working config from `config.example.json`, applying the reader's choices. Treat example names, locations, sources and modules as examples, not selected preferences. Omit unrequested optional modules. Use `publish.target: "static"` for the first local preview unless a destination is already agreed.
+1. Create a private working config from `config.example.json`, applying the reader's choices. The starter has no sources, topic preferences or optional modules. Replace the Reader/English/UTC placeholders from the reader’s answers; do not infer a location from them. Never copy examples/config.json or demo subscriptions into a reader’s settings. Omit unrequested optional modules. Use `publish.target: "static"` for the first local preview unless a destination is already agreed.
 2. Save it at a stable path outside the published output folder. Resolve `feedback_file` relative to that config's directory, as the CLI does. Keep using this config for future builds and preference updates.
 3. Parse the saved JSON and check the relevant values. Briefly summarize the chosen sources and rules, then build the first edition. Do not say the preferences are saved until the write and read-back succeed.
 
@@ -128,23 +128,23 @@ The page has no voting buttons. Requests to change topic coverage, exclude a sub
 | Reader request | Save this change |
 | --- | --- |
 | Increase coverage of a reader-chosen topic | Add relevant terms to `rules.boost_keywords`; move the corresponding section earlier if appropriate. Do not use a negative keyword weight: that demotes the topic. |
-| "Less crypto" | Apply a modest negative keyword weight, e.g. `feedback mute crypto -0.5`. This reduces ranking, not a guarantee of fewer stories. |
-| "Never show Tesla" | Add `tesla` to `rules.mute_keywords`. A negative weight alone does not exclude stories. |
-| Adjust the reader’s requested political coverage | Change `rules.max_political` only to match the reader’s explicit preference. Match the keyword list to the reader’s language and topics; keyword filtering is not perfect classification. |
-| "More from Simon Willison" | To allow more stories, increase that RSS source's `cap` within the overall news limit. Source weights affect scoring but do not by themselves increase its RSS quota. |
-| "Max two from The Verge" | Set `cap: 2` on the existing `verge` RSS source. |
-| "Hide The Verge" | Run `feedback hide verge` with the active config; use the actual configured source ID. |
+| Reduce coverage of a reader-chosen topic | Apply a modest negative keyword weight, e.g. `feedback mute KEYWORD -0.5`. This reduces ranking, not a guarantee of fewer stories. |
+| Exclude a reader-chosen subject | Add the requested keywords to `rules.mute_keywords`. A negative weight alone does not exclude stories. |
+| Adjust the reader’s requested political coverage | Change `rules.max_political` only to match the reader’s explicit preference. Use `null` for no cap and `0` to exclude matching news. This cap applies to news only; use explicitly requested `mute_keywords` for exclusions across news, videos and posts. Match the keyword list to the reader’s language and topics; keyword filtering is not perfect classification. |
+| Increase coverage from a reader-chosen source | To allow more stories, increase that RSS source's `cap` within the overall news limit. Source weights affect scoring but do not by themselves increase its RSS quota. |
+| Limit a reader-chosen source | Set its `cap` to the requested number. |
+| Hide a reader-chosen source | Run `feedback hide SOURCE_ID` with the active config; use the actual configured source ID. |
 | "Add/remove a source or YouTube channel" | Edit the appropriate `sources` list, resolve feed/channel identifiers and check new feeds. Preserve the other subscriptions. |
 | "Remove weather" | Set `modules.weather` to `null`. |
 | "Make it in German" / "call it Markets, not Börsen" | Set `language`; for a language that is not built in, translate the strings table into `strings` (see "Language"). A single changed word goes into `strings` too. Rewrite `greeting`, section titles and subtitles in that language. |
-| "Bring Tesla back" | Remove the matching exclusion and any conflicting saved keyword penalty; preserve unrelated preferences. |
+| Restore an excluded subject | Remove the matching exclusion and any conflicting saved keyword penalty; preserve unrelated preferences. |
 | "Show my preferences" | Read and summarize both the config and preference file, including exclusions and caps. This is read-only. |
 
 CLI examples (replace `config.json` with the active config path):
 
 ```bash
-python3 -m sharectl_edition feedback mute crypto -0.5 --config config.json
-python3 -m sharectl_edition feedback hide verge --config config.json
+python3 -m sharectl_edition feedback mute KEYWORD -0.5 --config config.json
+python3 -m sharectl_edition feedback hide SOURCE_ID --config config.json
 python3 -m sharectl_edition feedback show --config config.json
 ```
 

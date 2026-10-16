@@ -32,7 +32,7 @@ EN = {
     "why": "Why?",
     "why_title": "Why am I seeing this?",
     "why_intro": "Your agent read {read} items from {n} sources this morning and kept {kept}. The rules are yours: "
-                 "at most {per_source} per source, politics capped at {political}, and nothing you have muted.",
+                 "at most {per_source} per source, with any topic filters you have configured.",
     "why_skipped": "Left out today",
     "skip_reasons": {"hidden by you": "hidden by you", "muted keyword": "muted keyword", "no image": "no image",
                      "same story as another source": "same story as another source", "max per source": "max per source",
@@ -81,7 +81,7 @@ SV = {
     "why": "Varför?",
     "why_title": "Varför ser jag det här?",
     "why_intro": "Din agent läste {read} inslag från {n} källor i morse och behöll {kept}. Reglerna är dina: "
-                 "högst {per_source} per källa, politik begränsat till {political}, och inget du har tystat.",
+                 "högst {per_source} per källa, med de ämnesfilter du har valt.",
     "why_skipped": "Valdes bort i dag",
     "skip_reasons": {"hidden by you": "dolt av dig", "muted keyword": "tystat ord", "no image": "saknar bild",
                      "same story as another source": "samma story som en annan källa", "max per source": "max per källa",

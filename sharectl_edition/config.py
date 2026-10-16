@@ -5,7 +5,7 @@ import json
 DEFAULTS = {
     "name": "Reader",
     "greeting": "Good morning, {name}.",
-    "timezone": "America/New_York",
+    "timezone": "UTC",
     "language": "en",
     "strings": {},  # the agent's translation of the UI strings for a language that is not built in
     "sources": {"rss": [], "youtube": [], "x": {"enabled": False, "timeline_file": ""}},
@@ -16,7 +16,7 @@ DEFAULTS = {
         "max_videos": 6,
         "max_per_channel": 2,
         "fresh_days": 14,
-        "max_political": 2,
+        "max_political": None,
         "political_keywords": [],
         "boost_keywords": [],
         "mute_keywords": [],
