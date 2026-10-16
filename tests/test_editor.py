@@ -106,6 +106,23 @@ class EditorTests(unittest.TestCase):
         self.assertEqual(report['counts']['videos'], 1)
         self.assertIn('Sailing v', html)
 
+    def test_section_keeps_editor_order_when_later_articles_have_images(self):
+        articles = [self.item('story-' + str(i)) for i in range(9)]
+        articles[1]['image'] = 'https://example.com/photo.jpg'
+        self.raw['news'] = [self.item('lead')] + articles
+        self.raw_path.write_text(json.dumps(self.raw))
+        self.packet = collect(self.cfg, str(self.root), str(self.raw_path))
+        self.items.write_text(json.dumps(self.packet))
+        ids = ['lead'] + [item['id'] for item in articles]
+        self.selection = {'batch_id': self.packet['batch_id'], 'lead_id': 'lead',
+                          'items': [{'id': ident, 'section': 'news'} for ident in ids]}
+        html, report = self.render()
+        section = html.split('<section class="desk"', 1)[1].split('</section>', 1)[0]
+        positions = [section.index(item['title']) for item in articles]
+        self.assertEqual(positions, sorted(positions))
+        self.assertTrue(all(section.count(item['title']) == 1 for item in articles))
+        self.assertEqual(report['selected_ids'], ids)
+
     def test_failed_fetch_cannot_replace_previous_edition(self):
         cfg = self.root / 'config.json'
         self.cfg['sources']['rss'] = [{'id': 'bad', 'name': 'Bad', 'url': 'https://example.com/rss'}]

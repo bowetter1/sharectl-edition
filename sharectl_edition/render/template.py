@@ -4,6 +4,7 @@ import json
 import os
 import re
 from datetime import datetime
+from itertools import groupby
 from urllib.parse import urlsplit
 
 from . import labels
@@ -237,21 +238,21 @@ def desk(sec):
     items = sec["items"]
     if all(it["kind"] == "video" for it in items):
         return video_desk(sec)
-    text_posts = [it for it in items if it["kind"] == "post" and not it.get("image")]
-    rest = [it for it in items if it not in text_posts]
-    main = next((it for it in rest if it.get("image")), rest[0] if rest else None)
-    others = [it for it in rest if it is not main]
-    side, remaining = others[:3], others[3:]
     blocks = []
-    if main:
+    # Keep the editor's order, using voices only for consecutive text-only posts.
+    for text_only, group in groupby(items, key=lambda it: it["kind"] == "post" and not it.get("image")):
+        ordered = list(group)
+        if text_only:
+            blocks.append(voices(ordered))
+            continue
+        main, others = ordered[0], ordered[1:]
+        side, remaining = others[:3], others[3:]
         aside = f'<aside class="t-side">{"".join(small(it) for it in side)}</aside>'
         blocks.append(f'<div class="w top"><div class="t-main">{big(main)}</div>{aside}</div>')
-    if text_posts:
-        blocks.append(voices(text_posts))
-    if remaining:
-        blocks.append(two(remaining[:2]))
-    if len(remaining) > 2:
-        blocks.append(briefs(remaining[2:]))
+        if remaining:
+            blocks.append(two(remaining[:2]))
+        if len(remaining) > 2:
+            blocks.append(briefs(remaining[2:]))
     head = f'<header class="w d-head"><h2>{e(sec["title"])}</h2>' + (f'<p>{e(sec["sub"])}</p>' if sec.get("sub") else "") + "</header>"
     return f'<section class="desk" id="{sec["key"]}" style="--s:{sec["color"]}">{head}{"".join(blocks)}</section>'
 

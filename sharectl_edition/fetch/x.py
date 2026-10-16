@@ -2,8 +2,9 @@
 
 This package never logs in to X. The user's bot fetches the home timeline (or list/search results)
 with its own X tools and saves the raw API v2 response as JSON:
-    {"data": [posts], "includes": {"users": [...], "media": [...], "posts": [...]}}
+    {"data": [posts], "includes": {"users": [...], "media": [...], "tweets": [...]}}
 This module turns that file into edition items.
+Legacy saved exports using includes.posts and the reposted reference type are also accepted.
 """
 import html
 import json
@@ -22,13 +23,14 @@ def from_timeline(path: str, section: str = "") -> tuple[dict, list[dict]]:
     inc = tl.get("includes", {})
     users = {u["id"]: u for u in inc.get("users", [])}
     media = {m["media_key"]: m for m in inc.get("media", [])}
-    posts = {p["id"]: p for p in inc.get("posts", [])}
+    posts = {p["id"]: p for p in inc.get("tweets", inc.get("posts", []))}
     items, seen = [], set()
     for t in tl.get("data", []):
         refs = {r["type"]: r["id"] for r in t.get("referenced_tweets", [])}
         src = t
-        if "reposted" in refs:
-            src = posts.get(refs["reposted"])
+        repost_id = refs.get("retweeted") or refs.get("reposted")
+        if repost_id:
+            src = posts.get(repost_id)
             if not src:
                 continue
         if "replied_to" in refs and len(clean(t["text"])) < 40:

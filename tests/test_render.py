@@ -8,6 +8,25 @@ def n(src, title, **kw):
 
 
 class RenderTests(unittest.TestCase):
+    def test_mixed_sections_preserve_order_across_text_posts_and_images(self):
+        from sharectl_edition.render import template
+        template.set_language('en')
+        items = [n('a', 'First story'),
+                 n('b', '', kind='post', text='Second item is a text post'),
+                 n('c', 'Third story', image='https://example.com/third.jpg'),
+                 n('d', '', kind='post', text='Fourth item is a text post'),
+                 n('e', '', kind='post', text='Fifth item is another text post'),
+                 n('f', 'Sixth item is a video', kind='video', image='https://example.com/video.jpg'),
+                 n('g', 'Seventh story')]
+        for ordered in (items, items[1:] + items[:1]):
+            with self.subTest(first=ordered[0]['id']):
+                html = template.desk({'key': 'news', 'title': 'News', 'color': '#123456', 'items': ordered})
+                labels = [item['text'] if item['kind'] == 'post' else item['title'] for item in ordered]
+                positions = [html.index(label) for label in labels]
+                self.assertEqual(positions, sorted(positions))
+                self.assertTrue(all(html.count(label) == 1 for label in labels))
+                self.assertIn('class="quote"', html)
+
     def test_render_escapes_and_no_voting(self):
         from zoneinfo import ZoneInfo
         from sharectl_edition.render import template

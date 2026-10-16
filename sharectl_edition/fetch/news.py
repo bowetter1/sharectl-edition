@@ -158,7 +158,14 @@ def fetch_source(src: dict, candidates: int = 8) -> tuple[dict, list[dict]]:
                 break
         except net.FetchError as e:
             error = str(e)
-    arts = [a for a in arts if a["link"] and a["title"]][:candidates]
+    # Repeated feed entries are one candidate, keeping the first occurrence's metadata.
+    # Deduplicate before the cap so repeats cannot crowd out other articles.
+    unique, seen = [], set()
+    for a in arts:
+        if a["link"] and a["title"] and a["link"] not in seen:
+            unique.append(a)
+            seen.add(a["link"])
+    arts = unique[:candidates]
     stats = {"name": src["name"], "ok": bool(arts), "feed": used or urls[0], "read": len(arts)}
     if error and not arts:
         stats["error"] = error
