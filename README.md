@@ -11,8 +11,8 @@ Your agent asks what you want to read, waits for your answer, fetches the conten
 ## How it works
 
 1. Your agent asks about topics, sources, and people you follow, and waits for your answer
-2. It fetches articles, videos, and posts using its own web tools
-3. It selects the best content and fills `template.html` by hand (plain HTML, no build step)
+2. It fetches articles, videos, and posts with its own tools, from RSS feeds and free public APIs
+3. It selects the best content and fills `template.html` (plain HTML, no build step)
 4. You get `index.html` to open in your browser
 5. Tell your agent what to change—it remembers, and checks with you next time
 
@@ -22,7 +22,7 @@ Your agent asks what you want to read, waits for your answer, fetches the conten
 
 Read [`SKILL.md`](SKILL.md) for complete instructions on how to:
 - Interview the reader first, before fetching anything
-- Fetch content with your own tools (web search, RSS, X, YouTube)
+- Fetch content with your own tools: tested feeds and keyless APIs for news, YouTube, weather, sports and markets
 - Select and organize stories
 - Fill the template (with clear HTML comments showing where)
 - Handle missing tools (no X access? no problem)
@@ -74,10 +74,11 @@ See a real edition at [utgava.sharectl.com](https://utgava.sharectl.com/)
 
 Test it the way a new reader meets it:
 
-1. Open a new chat with no memory of you and no earlier `config.json` within reach.
+1. Open a new chat in an empty folder, with no memory of you and no earlier `config.json` within reach.
 2. Paste: "Make me a newspaper using https://github.com/bowetter1/sharectl-edition"
-3. The first reply should be the interview questions, and nothing should be fetched before you answer.
-4. Answer, then check that `index.html` uses only blocks from `template.html`, drops empty sections, and links every headline.
+3. The first reply should be the questions from Step 1, and nothing should be fetched before you answer.
+4. Answer, then check the `index.html` against Step 5 of `SKILL.md`, and that numbers and results match their sources.
+5. Repeat with more than one model, including a small one. Every AI is a customer, and the small ones show where the instructions are vague.
 
 ## Part of sharectl
 
