@@ -130,22 +130,30 @@ def byline(h: str, feed_author: str = "") -> dict:
 def article_meta(url: str, feed_author: str = "") -> dict:
     if not net.allowed(url):
         return {"title": "", "description": "", "image": "", "byline": byline("", feed_author)}
-    h = net.get(url, 12, browser=True)[:800_000]
-    return {"title": _meta(h, "og:title"), "description": _meta(h, "og:description") or _meta(h, "description"),
-            "image": _meta(h, "og:image"), "byline": byline(h, feed_author)}
+    try:
+        h = net.get(url, 12, browser=True)[:800_000]
+        return {"title": _meta(h, "og:title"), "description": _meta(h, "og:description") or _meta(h, "description"),
+                "image": _meta(h, "og:image"), "byline": byline(h, feed_author)}
+    except net.FetchError:
+        return {"title": "", "description": "", "image": "", "byline": byline("", feed_author)}
 
 
 def fetch_source(src: dict, candidates: int = 8) -> tuple[dict, list[dict]]:
     """One configured source -> (stats, items). src = {id, name, url, section?, priority?}."""
     urls = src["url"] if isinstance(src["url"], list) else [src["url"]]
-    arts, used = [], None
+    arts, used, error = [], None, None
     for u in urls:
-        arts = parse_feed(net.get(u, 20, browser=True))
-        if arts:
-            used = u
-            break
+        try:
+            arts = parse_feed(net.get(u, 20, browser=True))
+            if arts:
+                used = u
+                break
+        except net.FetchError as e:
+            error = str(e)
     arts = [a for a in arts if a["link"] and a["title"] and "/live" not in a["link"]][:candidates]
     stats = {"name": src["name"], "ok": bool(arts), "feed": used or urls[0], "read": len(arts)}
+    if error and not arts:
+        stats["error"] = error
     if src.get("enrich", True):
         with ThreadPoolExecutor(6) as ex:
             metas = list(ex.map(lambda a: article_meta(a["link"], a["author"]), arts))

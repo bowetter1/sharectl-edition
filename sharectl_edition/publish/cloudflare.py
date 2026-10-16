@@ -10,6 +10,7 @@ import subprocess
 def deploy(out: str, project: str) -> int:
     if not os.environ.get("CLOUDFLARE_API_TOKEN"):
         raise SystemExit("CLOUDFLARE_API_TOKEN is not set. Ask your user to create a Pages:Edit token.")
+    
     cmd = ["npx", "--yes", "wrangler@3", "pages", "deploy", out, "--project-name", project, "--branch", "main",
            "--commit-dirty=true"]
     return subprocess.run(cmd).returncode

@@ -10,6 +10,11 @@ UA = "sharectl-edition/0.1 (+https://github.com/bowetter1/sharectl-edition; pers
 BROWSER_UA = "Mozilla/5.0 (compatible; sharectl-edition/0.1; personal news reader)"
 
 
+class FetchError(Exception):
+    """HTTP fetch failed with a specific reason."""
+    pass
+
+
 def get(url: str, timeout: int = 15, browser: bool = False) -> str:
     req = urllib.request.Request(url, headers={
         "User-Agent": BROWSER_UA if browser else UA,
@@ -23,8 +28,16 @@ def get(url: str, timeout: int = 15, browser: bool = False) -> str:
                 data = gzip.decompress(data)
             charset = r.headers.get_content_charset() or "utf-8"
             return data.decode(charset, "replace")
-    except Exception:
-        return ""
+    except urllib.error.HTTPError as e:
+        raise FetchError(f"HTTP {e.code}: {e.reason}") from e
+    except urllib.error.URLError as e:
+        if hasattr(e.reason, 'strerror'):
+            raise FetchError(f"Network error: {e.reason.strerror}") from e
+        raise FetchError(f"URL error: {e.reason}") from e
+    except TimeoutError as e:
+        raise FetchError(f"Timeout after {timeout}s") from e
+    except Exception as e:
+        raise FetchError(f"Fetch failed: {type(e).__name__}: {e}") from e
 
 
 @lru_cache(maxsize=256)

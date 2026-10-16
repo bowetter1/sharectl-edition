@@ -62,11 +62,7 @@ def byline(it):
 
 
 def thumbs(it):
-    data = {"item_id": it["id"], "source": it["source"], "author": it.get("author", ""),
-            "section": it.get("sec", ""), "title": (it.get("title") or it.get("text", ""))[:140]}
-    return (f'<div class="fb" data-item="{esc_attr(json.dumps(data, ensure_ascii=False))}">'
-            f'<button type="button" data-vote="up" aria-pressed="false" title="{EN["like"]}">👍</button>'
-            f'<button type="button" data-vote="down" aria-pressed="false" title="{EN["dislike"]}">👎</button></div>')
+    return ""
 
 
 def hed(it, size):
@@ -218,21 +214,12 @@ def desk(sec):
     return f'<section class="desk" id="{sec["key"]}" style="--s:{sec["color"]}">{head}{"".join(blocks)}</section>'
 
 
-FEEDBACK_JS = """
-(function(){var K='sharectl-feedback',ev=JSON.parse(localStorage.getItem(K)||'[]');
-function mark(){document.querySelectorAll('.fb').forEach(function(f){var d=JSON.parse(f.dataset.item),last=null;
-ev.forEach(function(x){if(x.item_id===d.item_id)last=x.vote});f.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.vote===last)})})}
-document.addEventListener('click',function(e){var b=e.target.closest('.fb button');if(!b)return;var d=JSON.parse(b.parentNode.dataset.item);
-d.vote=b.getAttribute('aria-pressed')==='true'?'clear':b.dataset.vote;d.ts=new Date().toISOString();d.edition=document.body.dataset.edition;ev.push(d);
-localStorage.setItem(K,JSON.stringify(ev));mark();});
-var x=document.getElementById('export');if(x)x.addEventListener('click',function(e){e.preventDefault();
-var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({events:ev},null,1)],{type:'application/json'}));
-a.download='feedback-'+new Date().toISOString().slice(0,10)+'.json';a.click();});mark();})();
-"""
+FEEDBACK_JS = ""
 
 
 def page(cfg, sections, morning, now, tz):
-    css = open(os.path.join(HERE, "edition.css"), encoding="utf-8").read()
+    with open(os.path.join(HERE, "edition.css"), encoding="utf-8") as f:
+        css = f.read()
     for s in sections:
         s.setdefault("color", color_for(s["key"]))
         for it in s["items"]:
@@ -254,7 +241,7 @@ def page(cfg, sections, morning, now, tz):
             + (f'<section class="w morning" aria-label="This morning">{"".join(morning)}</section>' if morning else "")
             + (front(lead, news_like, tz) if lead else "")
             + "".join(desk(s) for s in sections)
-            + f'</main><footer class="w foot"><span>{EN["footer"]}</span><a href="#" id="export">{EN["export"]}</a></footer>')
+            + f'</main><footer class="w foot"><span>{EN["footer"]}</span><span>Want changes? Just tell your bot.</span></footer>')
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{e(hello)} · {date}</title><meta name="robots" content="noindex"><style>{css}</style></head>'
-            f'<body class="paper" data-edition="{now:%Y-%m-%d}">{body}<script>{FEEDBACK_JS}</script></body></html>')
+            f'<body class="paper" data-edition="{now:%Y-%m-%d}">{body}</body></html>')

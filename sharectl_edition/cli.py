@@ -23,8 +23,8 @@ def main(argv=None):
         p.add_argument("--from-items", default=None, help="re-render from a saved items.json (no network)")
         p.add_argument("--save-items", default=None, help="save fetched items to this JSON file")
     f = sub.add_parser("feedback")
-    f.add_argument("action", choices=["import", "show", "add", "hide"])
-    f.add_argument("arg", nargs="*", help="import: FILE | add: ITEM_ID up|down | hide: SOURCE_OR_AUTHOR")
+    f.add_argument("action", choices=["show", "boost", "mute", "hide"])
+    f.add_argument("arg", nargs="*", help="boost/mute: IDENTIFIER AMOUNT | hide: IDENTIFIER")
     f.add_argument("--config", default="config.json")
     a = ap.parse_args(argv)
 
@@ -34,17 +34,27 @@ def main(argv=None):
 
     if a.cmd == "feedback":
         w = feedback.load(fb_path)
-        if a.action == "import":
-            print(f"imported {feedback.import_file(fb_path, a.arg[0])} events")
-            return
-        if a.action == "add":
-            feedback.apply(w, {"item_id": a.arg[0], "vote": a.arg[1], "source": a.arg[2] if len(a.arg) > 2 else "",
-                               "ts": "cli"})
-        if a.action == "hide":
-            w["hidden"] = sorted(set(w["hidden"]) | {feedback.norm(a.arg[0])})
-        if a.action in ("add", "hide"):
+        if a.action == "boost":
+            if len(a.arg) < 2:
+                print("usage: feedback boost IDENTIFIER AMOUNT")
+                return 1
+            cat = "sources" if not a.arg[0].startswith("@") else "authors"
+            feedback.bump(w, cat, a.arg[0], float(a.arg[1]))
             feedback.save(fb_path, w)
-        print(json.dumps({k: v for k, v in w.items() if k != "seen"}, indent=1, ensure_ascii=False))
+        elif a.action == "mute":
+            if len(a.arg) < 2:
+                print("usage: feedback mute IDENTIFIER AMOUNT")
+                return 1
+            cat = "keywords"
+            feedback.bump(w, cat, a.arg[0], float(a.arg[1]))
+            feedback.save(fb_path, w)
+        elif a.action == "hide":
+            if not a.arg:
+                print("usage: feedback hide IDENTIFIER")
+                return 1
+            feedback.hide(w, a.arg[0])
+            feedback.save(fb_path, w)
+        print(json.dumps(w, indent=1, ensure_ascii=False))
         return
 
     from .build import build
@@ -63,11 +73,16 @@ def main(argv=None):
     print(f"wrote {path}  {report['counts']}")
 
     if a.cmd == "publish":
-        target = cfg["publish"].get("target", "static")
-        if target == "cloudflare":
+        target = cfg["publish"].get("target", "github")
+        if target == "github":
+            from .publish import github
+            repo = cfg["publish"].get("repo_url")
+            branch = cfg["publish"].get("branch", "gh-pages")
+            sys.exit(github.deploy(out, repo, branch))
+        elif target == "cloudflare":
             from .publish import cloudflare
             sys.exit(cloudflare.deploy(out, cfg["publish"]["project"]))
-        if target == "sharectl":
+        elif target == "sharectl":
             from .publish import sharectl
             print("POST", sharectl.post(html_text, cfg["publish"]["url"], cfg["publish"].get("token_env", "SHARECTL_TOKEN"), date))
         else:

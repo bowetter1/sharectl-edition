@@ -35,10 +35,10 @@ def fetch(cfg: dict, tz: str) -> dict | None:
          "hourly": "temperature_2m,weather_code",
          "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,weather_code",
          "temperature_unit": "fahrenheit" if f else "celsius", "wind_speed_unit": "mph" if f else "ms"}
-    raw = net.get("https://api.open-meteo.com/v1/forecast?" + urlencode(q), 15)
     try:
+        raw = net.get("https://api.open-meteo.com/v1/forecast?" + urlencode(q), 15)
         d = json.loads(raw)
-    except Exception:
+    except (net.FetchError, Exception):
         return None
     cur, hr, day = d["current"], d["hourly"], d["daily"]
     now_i = next((i for i, t in enumerate(hr["time"]) if t >= cur["time"][:13]), 0)

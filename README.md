@@ -2,15 +2,15 @@
 
 **Your own bot edits your personal morning paper.**
 
-You tell your AI bot (Grok Bot, Claude, Codex, or any agent with a shell) what you read, and every morning it builds a
-newspaper just for you: the news sources you trust, the YouTube channels you watch, and optionally the people you
-follow on X. People before outlets, so you see who wrote it. Change the whole paper with one sentence in chat:
-*"more AI, less politics, max two stories from The Verge."*
+Part of [sharectl.com](https://sharectl.com) — a people-first personal edition edited by your own AI bot. This is the on-ramp: a zero-dependency Python project that fetches, selects, and publishes your daily newspaper from the sources you choose. No app, no account, no central server.
 
-No app, no account, no central server. The code runs in your bot's own sandbox, and the paper is a static page that
-your bot publishes wherever you like.
+Tell your bot what you read, and every morning it builds a newspaper just for you: the sources you trust, the YouTube channels you watch, and optionally the people you follow on X. Change the whole paper with one sentence in chat: *"more AI, less politics, max two stories from The Verge."*
 
 ![Example edition](examples/screenshot.jpg)
+
+👉 **[Live demo: utgava.sharectl.com](https://utgava.sharectl.com/)**
+
+Install: `git clone https://github.com/bowetter1/sharectl-edition.git && cd sharectl-edition && python3 -m sharectl_edition build --config config.example.json --out site/`
 
 ## Quickstart: tell your bot
 
@@ -37,7 +37,7 @@ Python 3.10+, standard library only.
 - **Sections** you define (AI, Tech, Business, U.S. & World...): one big story, a column beside it, two-column stories, briefs.
 - **Voices from X**: posts from people you follow, if your bot has X access.
 - **Video**: new uploads from your YouTube channels, on a black page with round red play buttons.
-- 👍 / 👎 on every item. That's the only feedback; your bot uses it to tune tomorrow's paper.
+- **Plain-language feedback**: Tell your bot what you want more or less of ("more AI", "less politics", "hide Tesla"), and it adjusts the paper.
 
 ## How selection works
 
@@ -49,10 +49,20 @@ list); per-source caps; round-robin across sources so no single outlet takes ove
 
 ```
 python -m sharectl_edition build    --config config.json --out site/
-python -m sharectl_edition publish  --config config.json          # static | cloudflare | sharectl
-python -m sharectl_edition feedback import feedback.json --config config.json
+python -m sharectl_edition publish  --config config.json          # github (default) | cloudflare | sharectl | static
 python -m sharectl_edition feedback show --config config.json
+python -m sharectl_edition feedback boost SOURCE 1.0 --config config.json
+python -m sharectl_edition feedback mute KEYWORD -0.5 --config config.json
+python -m sharectl_edition feedback hide SOURCE --config config.json
 ```
+
+## Publishing
+
+**GitHub Pages (recommended):** Set `"target": "github"` in `config.json` publish section. The bot pushes to a `gh-pages` branch in your repo. Enable Pages in your repo settings (Settings > Pages > Source: gh-pages branch). Your edition will be live at `https://USERNAME.github.io/REPO-NAME/`.
+
+**Cloudflare Pages:** Set `"target": "cloudflare"` and provide `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` environment variables.
+
+**Static:** Set `"target": "static"` to build locally and serve from any static host.
 
 ## Layout
 

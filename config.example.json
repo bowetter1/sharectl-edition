@@ -42,7 +42,7 @@
     "max_per_x_account": 2,
     "fresh_days": 14,
     "max_political": 2,
-    "political_keywords": [],
+    "political_keywords": ["election", "senate", "congress", "republican", "democrat", "gop", "white house", "governor", "ballot", "impeach", "partisan", "lawmakers", "trump", "biden", "harris"],
     "boost_keywords": ["ai", "agents", "open source"],
     "mute_keywords": ["horoscope", "sponsored", "deal of the day"],
     "require_image": false
@@ -57,6 +57,6 @@
     ]}
   },
 
-  "publish": {"target": "static", "out": "site", "project": "my-edition", "url": "", "token_env": "SHARECTL_TOKEN"},
+  "publish": {"target": "github", "out": "site", "branch": "gh-pages", "repo_url": "", "project": "my-edition", "url": "", "token_env": "SHARECTL_TOKEN"},
   "feedback_file": "feedback.json"
 }
