@@ -8,32 +8,29 @@ import subprocess
 import shutil
 import tempfile
 
+MISSING_REPO = ('publish.repo_url is required for GitHub Pages: the URL of the reader\'s own repository. '
+                'The current checkout\'s origin is never assumed, since it is usually this tool\'s public repository.')
 
-def deploy(out: str, repo_url: str = None, branch: str = "gh-pages") -> int:
+
+def deploy(out: str, repo_url: str, branch: str = "gh-pages") -> int:
     """Push the static site to GitHub Pages.
-    
+
     Args:
         out: Path to the built site directory
-        repo_url: Git repository URL (defaults to origin remote of current repo)
+        repo_url: Git repository URL of the reader's own repository (required)
         branch: Target branch (default: gh-pages)
-    
+
     Returns:
         0 on success, non-zero on failure
     """
+    if not repo_url:
+        print(f"Error: {MISSING_REPO}")
+        return 1
+
     if not os.path.isdir(out):
         print(f"Error: Output directory {out} does not exist")
         return 1
-    
-    if not repo_url:
-        result = subprocess.run(
-            ["git", "config", "--get", "remote.origin.url"],
-            capture_output=True, text=True, cwd=os.getcwd()
-        )
-        if result.returncode != 0:
-            print("Error: Could not determine repository URL. Pass --repo-url or run from a git repository.")
-            return 1
-        repo_url = result.stdout.strip()
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
         deploy_dir = os.path.join(tmpdir, "deploy")
         

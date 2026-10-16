@@ -1,4 +1,6 @@
 import copy
+import email.message
+import io
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -45,6 +47,51 @@ class NewsTests(unittest.TestCase):
             packet = collect(cfg, tmp)
         self.assertEqual(len(packet['items']), 4)
         self.assertEqual(len({item['id'] for item in packet['items']}), 4)
+
+
+class MetaTests(unittest.TestCase):
+    def test_quotes_inside_a_value_do_not_cut_it_short(self):
+        cases = [
+            ('<meta property="og:title" content="Trump\'s new plan won\'t pass">', 'og:title', "Trump's new plan won't pass"),
+            ('<meta property=\'og:description\' content=\'He said "no" today\'>', 'og:description', 'He said "no" today'),
+            ('<meta content="Biden\'s reply" property="og:title">', 'og:title', "Biden's reply"),
+            ('<meta name="description" content="">', 'description', ''),
+        ]
+        for page, prop, expected in cases:
+            with self.subTest(page=page):
+                self.assertEqual(news._meta(page, prop), expected)
+
+
+class FakeResponse(io.BytesIO):
+    def __init__(self, body: bytes, content_type: str):
+        super().__init__(body)
+        self.headers = email.message.Message()
+        self.headers['Content-Type'] = content_type
+
+
+LATIN1_FEED = ('<?xml version="1.0" encoding="ISO-8859-1"?><rss><channel><item><title>Rösträkning i Göteborg</title>'
+               '<link>https://example.se/a</link></item></channel></rss>').encode('latin-1')
+
+
+class EncodingTests(unittest.TestCase):
+    def fetch(self, body, content_type):
+        with patch('urllib.request.urlopen', return_value=FakeResponse(body, content_type)):
+            return net.get('https://example.se/feed')
+
+    def test_feed_declaring_its_encoding_keeps_its_letters(self):
+        for content_type in ('application/rss+xml', 'text/xml; charset=ISO-8859-1'):
+            with self.subTest(content_type=content_type):
+                items = news.parse_feed(self.fetch(LATIN1_FEED, content_type))
+                self.assertEqual(items[0]['title'], 'Rösträkning i Göteborg')
+
+    def test_html_meta_charset_is_used_without_a_header_charset(self):
+        page = '<html><head><meta charset="iso-8859-1"><title>Smörgåsbord</title>'.encode('latin-1')
+        self.assertIn('Smörgåsbord', self.fetch(page, 'text/html'))
+
+    def test_server_charset_wins_and_unknown_names_fall_back_to_utf8(self):
+        self.assertEqual(net.decode('Malmö'.encode(), 'utf-8'), 'Malmö')
+        self.assertEqual(net.decode(b'<?xml version="1.0" encoding="no-such-codec"?><a/>', None),
+                         '<?xml version="1.0" encoding="no-such-codec"?><a/>')
 
 
 if __name__ == '__main__':

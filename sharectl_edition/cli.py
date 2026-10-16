@@ -80,6 +80,11 @@ def main(argv=None):
     from .publish import static
     from . import recovery
 
+    target = cfg["publish"].get("target", "static")
+    if a.cmd == "publish" and target == "github" and not cfg["publish"].get("repo_url"):
+        from .publish import github
+        raise ValueError(github.MISSING_REPO)
+
     out = a.out or os.path.join(base, cfg["publish"].get("out", "site"))
     try:
         state = recovery.state_path(a.config, out)
@@ -106,7 +111,6 @@ def main(argv=None):
         print(f"WARNING: AI selection failed; using {report['recovery']['mode']} edition dated {report['date']}", file=sys.stderr)
 
     if a.cmd == "publish":
-        target = cfg["publish"].get("target", "static")
         if target == "github":
             from .publish import github
             repo = cfg["publish"].get("repo_url")

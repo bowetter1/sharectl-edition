@@ -1,5 +1,6 @@
 """Tiny HTTP helper (stdlib only). Identifies itself honestly and never sends cookies or credentials."""
 import gzip
+import re
 import urllib.request
 import urllib.robotparser
 from functools import lru_cache
@@ -15,6 +16,20 @@ class FetchError(Exception):
     pass
 
 
+# The document's own encoding: an XML prolog or an HTML <meta charset>, within the first 1024 bytes.
+_DECLARED = re.compile(rb'<\?xml[^>]+encoding=["\']([\w.:-]+)|<meta[^>]+charset=["\']?([\w.:-]+)', re.I)
+
+
+def decode(data: bytes, header_charset: str | None) -> str:
+    """Server's charset first, then the document's declaration, else UTF-8."""
+    m = None if header_charset else _DECLARED.search(data[:1024])
+    charset = header_charset or (m and (m.group(1) or m.group(2)).decode("ascii")) or "utf-8"
+    try:
+        return data.decode(charset, "replace")
+    except LookupError:
+        return data.decode("utf-8", "replace")
+
+
 def get(url: str, timeout: int = 15, browser: bool = False) -> str:
     req = urllib.request.Request(url, headers={
         "User-Agent": BROWSER_UA if browser else UA,
@@ -26,8 +41,7 @@ def get(url: str, timeout: int = 15, browser: bool = False) -> str:
             data = r.read(3_000_000)
             if r.headers.get("Content-Encoding") == "gzip":
                 data = gzip.decompress(data)
-            charset = r.headers.get_content_charset() or "utf-8"
-            return data.decode(charset, "replace")
+            return decode(data, r.headers.get_content_charset())
     except urllib.error.HTTPError as e:
         raise FetchError(f"HTTP {e.code}: {e.reason}") from e
     except urllib.error.URLError as e:
