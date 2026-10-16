@@ -2,39 +2,15 @@
   "name": "Reader",
   "greeting": "Good morning, {name}.",
   "timezone": "UTC",
-  "language": "en",
   "strings": {},
   "sources": {
-    "rss": [],
-    "youtube": [],
-    "x": {
-      "enabled": false,
-      "timeline_file": "",
-      "section": ""
-    }
+    "rss": []
   },
   "sections": [],
   "rules": {
     "max_per_source": 3,
-    "max_news": 24,
-    "max_videos": 6,
-    "max_per_channel": 2,
-    "max_posts": 20,
-    "max_per_x_account": 2,
-    "fresh_days": 14,
-    "max_political": null,
-    "political_keywords": [],
     "boost_keywords": [],
-    "mute_keywords": [],
-    "require_image": false
-  },
-  "modules": {
-    "weather": null,
-    "markets": null
-  },
-  "publish": {
-    "target": "static",
-    "out": "site"
+    "mute_keywords": []
   },
   "feedback_file": "feedback.json"
 }

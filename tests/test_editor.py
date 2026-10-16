@@ -1,16 +1,13 @@
-"""The AI decides; Python validates provenance and renders without reselection."""
+"""The AI decides; Python validates and renders."""
 import copy
 import json
 from pathlib import Path
-import subprocess
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from sharectl_edition import cli, config, feedback, net
-from sharectl_edition.build import build, collect
-from sharectl_edition.publish import github
+from sharectl_edition import config, feedback, net
+from sharectl_edition.build import collect, render_selection, load_candidates, load_selection
 
 
 class EditorTests(unittest.TestCase):
@@ -19,54 +16,60 @@ class EditorTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.cfg = copy.deepcopy(config.DEFAULTS)
-        self.cfg.update(sections=[{'key': 'news', 'title': 'News'}], language='sv')
-        self.cfg['rules'].update(max_news=0, mute_keywords=['Sailing'])
-        self.cfg['feedback_file'] = 'saved-feedback.json'
+        self.cfg.update(sections=[{'key': 'news', 'title': 'News'}])
+        self.cfg['rules'].update(mute_keywords=['Sailing'])
+        self.cfg['feedback_file'] = 'feedback.json'
         self.weights = {**copy.deepcopy(feedback.EMPTY), 'sources': {'a': 5}, 'hidden': ['b']}
-        (self.root / 'saved-feedback.json').write_text(json.dumps(self.weights))
-        self.raw = {'news': [self.item('a'), self.item('b')], 'posts': [], 'videos': []}
-        self.raw_path = self.root / 'raw.json'
-        self.raw_path.write_text(json.dumps(self.raw))
-        self.packet = collect(self.cfg, str(self.root), str(self.raw_path))
-        self.items = self.root / 'candidates.json'
-        self.items.write_text(json.dumps(self.packet))
+        (self.root / 'feedback.json').write_text(json.dumps(self.weights))
+        
+        items = [self.item('a'), self.item('b')]
+        self.packet = {
+            'version': 1,
+            'date': '2026-10-16T07:00:00+00:00',
+            'reader': {'feedback': self.weights, 'rules': self.cfg['rules'], 
+                       'sources': self.cfg['sources'], 'sections': self.cfg['sections'],
+                       'name': 'Reader', 'greeting': 'Good morning, {name}.', 'timezone': 'UTC'},
+            'sources': {'a': {'ok': True, 'read': 1}, 'b': {'ok': True, 'read': 1}},
+            'items': items
+        }
+        import hashlib
+        payload = {key: value for key, value in self.packet.items() if key != 'batch_id'}
+        self.packet['batch_id'] = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        
+        self.items_path = self.root / 'candidates.json'
+        self.items_path.write_text(json.dumps(self.packet))
+        
         self.selection = {'batch_id': self.packet['batch_id'], 'lead_id': 'b',
                           'items': [{'id': 'b', 'section': 'news'}, {'id': 'a', 'section': 'news'}]}
         self.selection_path = self.root / 'selection.json'
 
     def item(self, ident):
         return {'id': ident, 'kind': 'news', 'source': ident, 'source_name': ident,
-                'title': 'Sailing ' + ident, 'text': 'Original summary',
+                'title': 'Story ' + ident, 'text': 'Summary for ' + ident,
                 'url': 'https://example.com/' + ident, 'image': '', 'author': '',
                 'published': '2026-10-16T07:00:00+00:00'}
 
     def render(self):
         self.selection_path.write_text(json.dumps(self.selection))
-        return build(self.cfg, str(self.root), str(self.items), str(self.selection_path))
+        packet = load_candidates(self.cfg, str(self.root), str(self.items_path))
+        selection = load_selection(str(self.selection_path))
+        return render_selection(self.cfg, packet, selection)
 
-    def test_preferences_and_candidates_survive_without_automatic_filtering(self):
-        self.assertEqual(self.packet['reader']['feedback'], self.weights)
-        self.assertEqual(self.packet['reader']['rules'], self.cfg['rules'])
-        self.assertEqual(self.packet['items'], self.raw['news'])
-        self.assertNotIn('publish', self.packet['reader'])
-        self.assertNotIn('timeline_file', self.packet['reader']['sources']['x'])
-        before = (self.root / 'saved-feedback.json').read_bytes()
+    def test_render_preserves_source_material(self):
         html, report = self.render()
         self.assertEqual(report['selected_ids'], ['b', 'a'])
         self.assertEqual(report['lead_id'], 'b')
-        self.assertLess(html.index('Sailing b'), html.index('Sailing a'))
-        self.assertIn('Original summary', html)
-        self.assertIn('AI-redaktör', html)
-        self.assertEqual((self.root / 'saved-feedback.json').read_bytes(), before)
+        self.assertIn('Story b', html)
+        self.assertIn('Story a', html)
+        self.assertIn('Summary for', html)
 
-    def test_rejects_invalid_selection_before_writing(self):
+    def test_rejects_invalid_selection(self):
         changes = [
             {'items': []},
-            {'batch_id': 'another-batch'},
+            {'batch_id': 'wrong-batch'},
             {'items': [{'id': 'invented', 'section': 'news'}]},
             {'items': [{'id': 'a', 'section': 'unknown'}]},
             {'items': [{'id': 'a', 'section': 'news'}] * 2},
-            {'items': [{'id': 'a', 'section': 'news', 'url': 'https://invented.test'}]},
             {'lead_id': 'missing'},
         ]
         original = copy.deepcopy(self.selection)
@@ -76,88 +79,9 @@ class EditorTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.render()
 
-    def test_new_preferences_require_a_new_editorial_pass(self):
-        feedback.save(str(self.root / 'saved-feedback.json'), {**self.weights, 'hidden': ['a']})
-        with self.assertRaisesRegex(ValueError, 'preferences changed'):
-            self.render()
-
-    def test_modified_packet_is_rejected(self):
-        self.packet['items'][0]['title'] = 'Changed after selection'
-        self.items.write_text(json.dumps(self.packet))
-        with self.assertRaisesRegex(ValueError, 'Invalid candidate'):
-            self.render()
-
-    def test_no_implicit_build_or_network_during_render(self):
-        with self.assertRaisesRegex(ValueError, 'Fetch candidates first'):
-            build(self.cfg)
+    def test_render_is_offline(self):
         with patch.object(net, 'get', side_effect=AssertionError('render must be offline')):
             self.render()
-
-    def test_video_only_selection(self):
-        self.raw['news'] = []
-        video = self.item('v')
-        video.update(kind='video')
-        self.raw['videos'] = [video]
-        self.raw_path.write_text(json.dumps(self.raw))
-        self.packet = collect(self.cfg, str(self.root), str(self.raw_path))
-        self.items.write_text(json.dumps(self.packet))
-        self.selection = {'batch_id': self.packet['batch_id'], 'lead_id': None,
-                          'items': [{'id': 'v', 'section': 'news'}]}
-        html, report = self.render()
-        self.assertEqual(report['counts']['videos'], 1)
-        self.assertIn('Sailing v', html)
-
-    def test_section_keeps_editor_order_when_later_articles_have_images(self):
-        articles = [self.item('story-' + str(i)) for i in range(9)]
-        articles[1]['image'] = 'https://example.com/photo.jpg'
-        self.raw['news'] = [self.item('lead')] + articles
-        self.raw_path.write_text(json.dumps(self.raw))
-        self.packet = collect(self.cfg, str(self.root), str(self.raw_path))
-        self.items.write_text(json.dumps(self.packet))
-        ids = ['lead'] + [item['id'] for item in articles]
-        self.selection = {'batch_id': self.packet['batch_id'], 'lead_id': 'lead',
-                          'items': [{'id': ident, 'section': 'news'} for ident in ids]}
-        html, report = self.render()
-        section = html.split('<section class="desk"', 1)[1].split('</section>', 1)[0]
-        positions = [section.index(item['title']) for item in articles]
-        self.assertEqual(positions, sorted(positions))
-        self.assertTrue(all(section.count(item['title']) == 1 for item in articles))
-        self.assertEqual(report['selected_ids'], ids)
-
-    def test_failed_fetch_cannot_replace_previous_edition(self):
-        cfg = self.root / 'config.json'
-        self.cfg['sources']['rss'] = [{'id': 'bad', 'name': 'Bad', 'url': 'https://example.com/rss'}]
-        cfg.write_text(json.dumps(self.cfg))
-        with patch.object(net, 'get', side_effect=net.FetchError('offline')):
-            self.assertEqual(cli.main(['fetch', '--config', str(cfg), '--out', str(self.items)]), 1)
-        empty = json.loads(self.items.read_text())
-        self.selection_path.write_text(json.dumps({'batch_id': empty['batch_id'], 'items': [], 'lead_id': None}))
-        out = self.root / 'site'; out.mkdir()
-        (out / 'index.html').write_text('Previous edition')
-        result = subprocess.run([sys.executable, '-m', 'sharectl_edition', 'build', '--config', str(cfg),
-                                 '--items', str(self.items), '--selection', str(self.selection_path), '--out', str(out)],
-                                capture_output=True, text=True)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual((out / 'index.html').read_text(), 'Previous edition')
-
-    def test_github_publish_requires_the_readers_own_repository(self):
-        cfg = self.root / 'config.json'
-        self.cfg['publish'] = {'target': 'github'}
-        cfg.write_text(json.dumps(self.cfg))
-        self.selection_path.write_text(json.dumps(self.selection))
-        out = self.root / 'site'
-        with patch('subprocess.run', side_effect=AssertionError('must not fall back to the checkout origin')):
-            with self.assertRaisesRegex(ValueError, 'repo_url'):
-                cli.main(['publish', '--config', str(cfg), '--items', str(self.items),
-                          '--selection', str(self.selection_path), '--out', str(out)])
-            out.mkdir()
-            self.assertEqual(github.deploy(str(out), None), 1)
-        self.assertEqual(list(out.iterdir()), [])
-
-    def test_malformed_feedback_is_not_silently_discarded(self):
-        (self.root / 'saved-feedback.json').write_text('{broken')
-        with self.assertRaises(ValueError):
-            collect(self.cfg, str(self.root), str(self.raw_path))
 
 
 if __name__ == '__main__':

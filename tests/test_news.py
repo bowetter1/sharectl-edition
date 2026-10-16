@@ -1,7 +1,6 @@
 import copy
 import email.message
 import io
-import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -34,8 +33,7 @@ class NewsTests(unittest.TestCase):
     def test_collect_accepts_a_feed_with_repeated_articles(self, get):
         cfg = copy.deepcopy(config.DEFAULTS)
         cfg['sources']['rss'] = [SOURCE]
-        with tempfile.TemporaryDirectory() as tmp:
-            packet = collect(cfg, tmp)
+        packet = collect(cfg)
         self.assertEqual(len(packet['items']), 2)
         self.assertEqual(packet['sources']['example']['read'], 2)
 
@@ -43,8 +41,7 @@ class NewsTests(unittest.TestCase):
     def test_same_article_from_different_sources_is_left_for_the_editor(self, get):
         cfg = copy.deepcopy(config.DEFAULTS)
         cfg['sources']['rss'] = [SOURCE, {**SOURCE, 'id': 'other', 'name': 'Other'}]
-        with tempfile.TemporaryDirectory() as tmp:
-            packet = collect(cfg, tmp)
+        packet = collect(cfg)
         self.assertEqual(len(packet['items']), 4)
         self.assertEqual(len({item['id'] for item in packet['items']}), 4)
 
